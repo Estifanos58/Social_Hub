@@ -1,0 +1,416 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""Types of Roles in the chat room"""
+enum ChatRoomRole {
+  ADMIN
+  MEMBER
+  MODERATOR
+  OWNER
+}
+
+type ChatroomDetailDto {
+  avatarUrl: String
+  directUser: ChatroomDirectUserDto
+  id: String!
+  isGroup: Boolean!
+  members: [ChatroomMemberDetailDto!]
+  name: String
+  totalMembers: Int
+  totalMessages: Int!
+  totalPhotos: Int!
+}
+
+type ChatroomDirectUserDto {
+  avatarUrl: String
+  bio: String
+  email: String!
+  firstname: String
+  id: String!
+  lastname: String
+  totalFollowers: Int!
+  totalFollowing: Int!
+}
+
+type ChatroomDto {
+  avatarUrl: String
+  createdAt: DateTime!
+  createdBy: UserDto
+  createdById: String!
+  deletedAt: DateTime
+  id: String!
+  isGroup: Boolean!
+  memberships: [ChatroomUserDto!]
+  messages: [MessageDto!]
+  name: String
+  updatedAt: DateTime!
+}
+
+type ChatroomMemberDetailDto {
+  avatarUrl: String
+  firstname: String
+  id: String!
+  isOwner: Boolean!
+  lastname: String
+  userId: String!
+}
+
+type ChatroomUserDto {
+  chatroom: ChatroomDto
+  chatroomId: String!
+  id: String!
+  isMuted: Boolean!
+  joinedAt: DateTime!
+  lastReadAt: DateTime
+  role: ChatRoomRole!
+  user: UserDto
+  userId: String!
+}
+
+type CommentDto {
+  content: String!
+  createdAt: DateTime!
+  createdBy: UserDto
+  createdById: String!
+  deletedAt: DateTime
+  id: String!
+  parent: CommentDto
+  parentId: String
+  post: PostDto
+  postId: String!
+  replies: [CommentDto!]
+  repliesHasNextPage: Boolean
+  replyCount: Float
+  updatedAt: DateTime!
+}
+
+type CommentEdgeDto {
+  cursor: String!
+  node: CommentDto!
+}
+
+type CommentRepliesConnectionDto {
+  edges: [CommentEdgeDto!]!
+  pageInfo: PageInfoDto!
+  totalCount: Int!
+}
+
+input CreateCommentDto {
+  content: String!
+  parentId: String
+  postId: String!
+}
+
+input CreatePostDto {
+  content: String!
+  imageUrls: [String!]
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type FollowerDto {
+  createdAt: DateTime!
+  follower: UserDto
+  followerId: String!
+  following: UserDto
+  followingId: String!
+  id: String!
+}
+
+type GetChatUsersDto {
+  chatroomId: String!
+  groupName: String
+  isGroup: Boolean!
+  latestMessage: MessageDto!
+  otherUser: UserDto
+}
+
+type GetChatUsersResponse {
+  chatrooms: [GetChatUsersDto!]!
+}
+
+type GetFollowersDto {
+  hasMore: Boolean
+  totalFollowers: Float
+  totalFollowing: Float
+  users: [UserDto!]
+}
+
+input GetFollowersInput {
+  skip: Int
+  take: Int
+}
+
+type GetPostType {
+  comments: [CommentDto!]
+  commentsCount: Int!
+  content: String!
+  createdAt: DateTime!
+  createdBy: UserDto
+  createdById: String!
+  id: String!
+  images: [PostImageDto!]
+  reactions: [ReactionDto!]
+  reactionsCount: Int!
+  updatedAt: DateTime!
+  userReaction: String
+}
+
+type GetUserChatroomsResponse {
+  chatrooms: [ChatroomDto!]!
+}
+
+input GetUsersToFollow {
+  limit: Int
+  offset: Int
+}
+
+type GetUsersToFollowDto {
+  hasMore: Boolean!
+  users: [UserDto!]!
+}
+
+input LoginDto {
+  email: String!
+  password: String!
+}
+
+type MessageDto {
+  chatroom: ChatroomDto
+  chatroomId: String!
+  content: String
+  createdAt: DateTime!
+  deletedAt: DateTime
+  id: String!
+  imageUrl: String
+  isEdited: Boolean!
+  updatedAt: DateTime!
+  user: UserDto
+  userId: String!
+}
+
+type Mutation {
+  UnfollowUser(followingId: String!): String!
+  UpdateUser(updateUser: UpdateUserDto!): UserDto!
+  addReaction(postId: String!, type: String!): Boolean!
+  addUserToChatroomMutation(chatroomId: String!, otherUserIds: [String!]!, userId: String!): [String!]!
+  createChatroomMutation(avatarUrl: String, chatroomName: String, isGroupChat: Boolean, otherUserId: String): String!
+  createComment(createCommentInput: CreateCommentDto!): CommentDto!
+  createMessageMutation(chatroomId: String, content: String, imageUrl: String, otherUserId: String): MessageDto!
+  createPost(createPost: CreatePostDto!): String!
+  deletePost(postId: String!): String!
+  followUser(followingId: String!): String!
+  forgotPassword(email: String!): String!
+  login(loginInput: LoginDto!): UserResponse!
+  logout: String!
+  register(registerInput: RegisterDto!): UserResponse!
+  removeReaction(postId: String!): Boolean!
+  resetPassword(newPassword: String!, token: String!): UserResponse!
+  userStartedTypingMutation(chatroomId: String!): UserDto!
+  userStoppedTypingMutation(chatroomId: String!): UserDto!
+  verifyEmail(token: String!): UserResponse!
+}
+
+type NotificationDto {
+  actor: UserDto
+  actorId: String
+  comment: CommentDto
+  commentId: String
+  createdAt: DateTime!
+  id: String!
+  isRead: Boolean!
+  post: PostDto
+  postId: String
+  reaction: ReactionDto
+  reactionId: String
+  readAt: DateTime
+  recipient: UserDto
+  recipientId: String!
+  type: NotificationType!
+}
+
+enum NotificationType {
+  COMMENT_ON_POST
+  LOGIN
+  NEW_FOLLOWER
+  POST_DELETED
+  REACTION_ON_POST
+  REPLY_ON_COMMENT
+}
+
+type PageInfoDto {
+  endCursor: String
+  hasNextPage: Boolean!
+}
+
+type PaginatedPostsDto {
+  hasMore: Boolean!
+  posts: [PostFeedDto!]!
+}
+
+type Post {
+  comments: Float!
+  id: String!
+  imageUrl: String!
+  likes: Float!
+}
+
+type PostCommentsConnectionDto {
+  edges: [CommentEdgeDto!]!
+  pageInfo: PageInfoDto!
+  totalCount: Int!
+}
+
+type PostDto {
+  comments: [CommentDto!]
+  content: String!
+  createdAt: DateTime!
+  createdBy: UserDto
+  createdById: String!
+  deletedAt: DateTime
+  id: String!
+  images: [PostImageDto!]
+  reactions: [ReactionDto!]
+  updatedAt: DateTime!
+}
+
+type PostFeedDto {
+  commentsCount: Int!
+  content: String!
+  createdAt: DateTime!
+  createdBy: UserDto
+  createdById: String!
+  id: String!
+  images: [PostImageDto!]
+  reactionsCount: Int!
+  updatedAt: DateTime!
+  userReaction: String
+}
+
+type PostImageDto {
+  id: String!
+  postId: String!
+  url: String!
+}
+
+type Query {
+  GetChatUsers: GetChatUsersResponse!
+  GetFollowers(getFollowers: GetFollowersInput!): GetFollowersDto!
+  GetFollowing(getFollowing: GetFollowersInput!): GetFollowersDto!
+  GetUser(userId: String!): UserProfileDto!
+  GetUserChatrooms: GetUserChatroomsResponse!
+  GetUsersToFollow(getUsersToFollow: GetUsersToFollow!): GetUsersToFollowDto!
+  SearchUsers(searchUsersInput: SearchUsersInput!): SearchUsersResultDto!
+  chatroomDetail(chatroomId: String, otherUserId: String): ChatroomDetailDto!
+  commentReplies(after: String, commentId: String!, first: Int, includeChildren: Boolean, secondLevelLimit: Int): CommentRepliesConnectionDto!
+  getPost(postId: String!): GetPostType!
+  getPosts(cursor: String!, take: Float!): PaginatedPostsDto!
+  getme: UserDto!
+  messagesBetweenUsers(limit: Int, offset: Int, otherUserId: String): [MessageDto!]!
+  notifications(cursor: String, take: Int): [NotificationDto!]!
+  postComments(after: String, directRepliesLimit: Int, first: Int, postId: String!, secondLevelLimit: Int): PostCommentsConnectionDto!
+  unreadNotificationsCount: Int!
+}
+
+type ReactionDto {
+  createdAt: DateTime!
+  createdBy: UserDto
+  createdById: String!
+  id: String!
+  post: PostDto
+  postId: String!
+  type: ReactionType!
+  updatedAt: DateTime!
+}
+
+"""Types of reactions a user can make on a post"""
+enum ReactionType {
+  HAHA
+  LIKE
+  LOVE
+  SAD
+  WOW
+}
+
+input RegisterDto {
+  email: String!
+  firstname: String!
+  lastname: String!
+  password: String!
+}
+
+input SearchUsersInput {
+  limit: Int
+  offset: Int
+  searchTerm: String!
+}
+
+type SearchUsersResultDto {
+  hasMore: Boolean!
+  users: [UserDto!]!
+}
+
+type Subscription {
+  chatroomCreated(otherUserId: String!): MessageDto
+  newMessage(chatroomId: String!, userId: String!): MessageDto
+  userAddedToChatroom(otherUserId: String!): ChatroomDto
+  userDisconnect(userId: String!): UserPresenceDto
+  userOnline(userId: String!): UserPresenceDto
+  userStartedTyping(chatroomId: String!, userId: String!): UserDto
+  userStoppedTyping(chatroomId: String!, userId: String!): UserDto
+}
+
+input UpdateUserDto {
+  avatarUrl: String
+  bio: String
+  firstname: String
+  isPrivate: Boolean
+  lastname: String
+  twoFactorEnabled: Boolean
+}
+
+type UserDto {
+  avatarUrl: String
+  bio: String
+  chatroomsCreated: [ChatroomDto!]
+  comments: [CommentDto!]
+  createdAt: DateTime!
+  email: String!
+  firstname: String!
+  followers: [FollowerDto!]
+  following: [FollowerDto!]
+  id: String!
+  isFollowing: Boolean
+  isPrivate: Boolean!
+  lastSeenAt: DateTime
+  lastname: String
+  memberships: [ChatroomUserDto!]
+  messages: [MessageDto!]
+  posts: [PostDto!]
+  reactions: [ReactionDto!]
+  updatedAt: DateTime!
+  verified: Boolean!
+}
+
+type UserPresenceDto {
+  isOnline: Boolean!
+  lastSeenAt: DateTime
+  userId: String!
+}
+
+type UserProfileDto {
+  followers: Float
+  following: Float
+  posts: [Post!]
+  user: UserDto!
+}
+
+type UserResponse {
+  accessToken: String
+  refreshToken: String
+  user: UserDto
+}
