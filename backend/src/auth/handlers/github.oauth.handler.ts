@@ -50,12 +50,17 @@ export class GithubOAuthHandler implements ICommandHandler<GithubOAuthCommand> {
         });
       }
 
-      const tokens = issueToken(user, this.jwtService, this.configService, response);
+      await issueToken(
+        user,
+        this.jwtService,
+        this.configService,
+        response,
+        this.prisma,
+      );
 
-      const clientUrl = this.configService.get('CLIENT_URL') || 'http://localhost:3000';
+      const clientUrl =
+        this.configService.get('CLIENT_URL') || 'http://localhost:3000';
       const url = new URL('/auth/social-callback', clientUrl);
-      if (tokens?.accessToken) url.searchParams.set('accessToken', tokens.accessToken);
-      if (tokens?.refreshToken) url.searchParams.set('refreshToken', tokens.refreshToken);
 
       response.redirect(url.toString());
     } catch (error) {
@@ -86,46 +91,45 @@ export class GithubOAuthHandler implements ICommandHandler<GithubOAuthCommand> {
       // console.log("GitHub OAuth token response:", response.data);
       return response.data;
     } catch (error) {
-      console.log("Error: ",error)
+      console.log('Error: ', error);
       throw new Error(`Failed to fetch GitHub OAuth tokens: ${error.message}`);
     }
   }
 
   private async getGithubUser(access_token: string): Promise<any> {
-  try {
-    // 1. Get the user profile
-    const userUrl = 'https://api.github.com/user';
-    const userRes = await this.httpService.axiosRef.get(userUrl, {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    });
+    try {
+      // 1. Get the user profile
+      const userUrl = 'https://api.github.com/user';
+      const userRes = await this.httpService.axiosRef.get(userUrl, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
 
-    // console.log("GitHub user profile response:", userRes.data);
+      // console.log("GitHub user profile response:", userRes.data);
 
-    // 2. Get the user's emails (this returns an array of objects)
-    const emailUrl = 'https://api.github.com/user/emails';
-    const emailRes = await this.httpService.axiosRef.get(emailUrl, {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    });
+      // 2. Get the user's emails (this returns an array of objects)
+      const emailUrl = 'https://api.github.com/user/emails';
+      const emailRes = await this.httpService.axiosRef.get(emailUrl, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
 
-    // console.log("GitHub user emails response:", emailRes.data);
+      // console.log("GitHub user emails response:", emailRes.data);
 
-    if (!Array.isArray(emailRes.data) || emailRes.data.length === 0) {
-      throw new Error('No emails associated with this GitHub account');
+      if (!Array.isArray(emailRes.data) || emailRes.data.length === 0) {
+        throw new Error('No emails associated with this GitHub account');
+      }
+
+      // Find the primary email (GitHub marks one as primary)
+      const primaryEmail = emailRes.data.find((email) => email.primary)?.email;
+
+      const { id, login, name, avatar_url } = userRes.data;
+
+      return { id, login, email: primaryEmail, name, avatarUrl: avatar_url };
+    } catch (error) {
+      throw new Error(`Failed to fetch GitHub user: ${error.message}`);
     }
-
-    // Find the primary email (GitHub marks one as primary)
-    const primaryEmail = emailRes.data.find((email) => email.primary)?.email;
-
-    const { id, login, name, avatar_url } = userRes.data;
-
-    return { id, login, email: primaryEmail, name, avatarUrl: avatar_url };
-  } catch (error) {
-    throw new Error(`Failed to fetch GitHub user: ${error.message}`);
   }
-}
-
 }

@@ -2,17 +2,22 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Smile,
+} from "lucide-react";
+import {
   FaThumbsUp,
   FaLaughSquint,
   FaSadTear,
   FaSurprise,
   FaHeart,
-  FaRegCommentDots,
 } from "react-icons/fa";
-import { MdOutlineAddReaction } from "react-icons/md";
 import { useMutation } from "@apollo/client/react";
 import { ADD_REACTION_MUTATION } from "@/graphql/mutations/post/AddReaction";
 import { REMOVE_REACTION_MUTATION } from "@/graphql/mutations/post/RemoveReaction";
+import { toast } from "sonner";
 
 interface ReactionBarProps {
   post: {
@@ -22,7 +27,7 @@ interface ReactionBarProps {
     commentsCount?: number | null;
   };
   onCommentClick?: () => void;
-  showCommentButton?: boolean; // default true
+  showCommentButton?: boolean;
   disabled?: boolean;
   className?: string;
 }
@@ -34,10 +39,6 @@ interface ReactionOption {
   color: string;
 }
 
-/**
- * Unified reaction bar with optimistic update & debounce persistence.
- * Reused in feed cards (PostDisplay) and modal (PostDetailModal).
- */
 export const ReactionBar: React.FC<ReactionBarProps> = ({
   post,
   onCommentClick,
@@ -46,11 +47,11 @@ export const ReactionBar: React.FC<ReactionBarProps> = ({
   className = "",
 }) => {
   const ReactionList: ReactionOption[] = [
-    { name: "Like", type: "LIKE", icon: <FaThumbsUp />, color: "text-blue-500" },
-    { name: "Love", type: "LOVE", icon: <FaHeart />, color: "text-red-500" },
-    { name: "Haha", type: "HAHA", icon: <FaLaughSquint />, color: "text-yellow-400" },
-    { name: "Wow", type: "WOW", icon: <FaSurprise />, color: "text-orange-400" },
-    { name: "Sad", type: "SAD", icon: <FaSadTear />, color: "text-purple-500" },
+    { name: "Like", type: "LIKE", icon: <FaThumbsUp className="h-4 w-4" />, color: "text-blue-400" },
+    { name: "Love", type: "LOVE", icon: <FaHeart className="h-4 w-4" />, color: "text-rose-500" },
+    { name: "Haha", type: "HAHA", icon: <FaLaughSquint className="h-4 w-4" />, color: "text-amber-400" },
+    { name: "Wow", type: "WOW", icon: <FaSurprise className="h-4 w-4" />, color: "text-orange-400" },
+    { name: "Sad", type: "SAD", icon: <FaSadTear className="h-4 w-4" />, color: "text-sky-400" },
   ];
 
   const [showReactions, setShowReactions] = useState(false);
@@ -114,10 +115,9 @@ export const ReactionBar: React.FC<ReactionBarProps> = ({
     }
   };
 
-  // Initialize from server values when post changes
   useEffect(() => {
     if (post.userReaction) {
-      const found = ReactionList.find(r => r.type === post.userReaction) || null;
+      const found = ReactionList.find((r) => r.type === post.userReaction) || null;
       setSelectedReaction(found || null);
       lastCommittedReactionRef.current = found || null;
     } else {
@@ -132,7 +132,7 @@ export const ReactionBar: React.FC<ReactionBarProps> = ({
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
       persistReactionChange();
-    }, 2000);
+    }, 1500);
   };
 
   const openReactions = () => {
@@ -142,91 +142,126 @@ export const ReactionBar: React.FC<ReactionBarProps> = ({
     }
     setShowReactions(true);
   };
+
   const scheduleCloseReactions = () => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = setTimeout(() => setShowReactions(false), 180);
+    hideTimerRef.current = setTimeout(() => setShowReactions(false), 250);
+  };
+
+  const handleShare = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.origin + `/#post-${post.id}`);
+      toast.success("Post link copied to clipboard!");
+    }
   };
 
   return (
-  <div className={`flex items-center space-x-6 text-gray-300 text-sm relative ${className}`}>
-      <div
-        className="relative"
-        onMouseEnter={openReactions}
-        onMouseLeave={scheduleCloseReactions}
-      >
-        <button
-          className={
-            `flex items-center gap-2 text-2xl focus:outline-none transition-colors duration-150 ` +
-            (selectedReaction ? selectedReaction.color : "hover:text-blue-400") +
-            (isPersisting ? " opacity-70 cursor-wait" : "")
-          }
-          aria-label={selectedReaction ? `${selectedReaction.name} reaction` : "Add reaction"}
-          disabled={isPersisting || disabled}
-          type="button"
+    <div className={`flex items-center justify-between text-muted-foreground text-xs relative ${className}`}>
+      <div className="flex items-center gap-1">
+        {/* Reaction Trigger with Popover */}
+        <div
+          className="relative"
+          onMouseEnter={openReactions}
+          onMouseLeave={scheduleCloseReactions}
         >
-          <span className={`inline-flex items-center justify-center ${isPersisting ? "animate-pulse" : ""}`}>
-            {selectedReaction ? selectedReaction.icon : <MdOutlineAddReaction />}
-          </span>
-          <span>{localReactionCount}</span>
-        </button>
-        {showReactions && (
-          <div
-            className="absolute z-10 bottom-full left-0 mb-2 flex bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-2 space-x-2 backdrop-blur"
-            onMouseEnter={openReactions}
-            onMouseLeave={scheduleCloseReactions}
+          <button
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all duration-150 cursor-pointer ${
+              selectedReaction
+                ? "bg-primary/10 text-primary"
+                : "hover:bg-secondary/60 hover:text-foreground"
+            } ${isPersisting ? "opacity-75" : ""}`}
+            aria-label={selectedReaction ? `${selectedReaction.name} reaction` : "Add reaction"}
+            disabled={isPersisting || disabled}
+            type="button"
           >
-            {ReactionList.map(reaction => {
-              const isSelected = selectedReaction?.type === reaction.type;
-              return (
-                <button
-                  key={reaction.name}
-                  className={`text-2xl p-2 rounded-full transition-transform duration-150 ${reaction.color} ` +
-                    (isSelected ? "ring-2 ring-amber-400 scale-110 bg-gray-900" : "hover:bg-gray-800 hover:scale-110 bg-gray-900/20")}
-                  onClick={() => {
-                    if (isPersisting || disabled) return;
-                    setSelectedReaction(prev => {
-                      if (prev && prev.type === reaction.type) {
-                        setLocalReactionCount(c => Math.max(0, c - 1));
-                        pendingReactionRef.current = null;
-                        schedulePersist();
-                        scheduleCloseReactions();
-                        return null;
-                      }
-                      if (!prev) {
-                        setLocalReactionCount(c => c + 1);
+            <span className="flex items-center justify-center">
+              {selectedReaction ? (
+                selectedReaction.icon
+              ) : (
+                <Heart className="h-4 w-4" />
+              )}
+            </span>
+            <span className="font-semibold text-xs">{localReactionCount}</span>
+          </button>
+
+          {showReactions && (
+            <div
+              className="absolute z-30 bottom-full left-0 mb-2 flex items-center bg-card/95 border border-border/80 rounded-2xl shadow-xl shadow-black/50 p-1.5 gap-1 backdrop-blur-md animate-[fadeIn_120ms_ease-out]"
+              onMouseEnter={openReactions}
+              onMouseLeave={scheduleCloseReactions}
+            >
+              {ReactionList.map((reaction) => {
+                const isSelected = selectedReaction?.type === reaction.type;
+                return (
+                  <button
+                    key={reaction.name}
+                    className={`p-2 rounded-xl transition-all duration-150 cursor-pointer ${
+                      reaction.color
+                    } ${
+                      isSelected
+                        ? "bg-secondary scale-110 shadow-xs"
+                        : "hover:bg-secondary hover:scale-115"
+                    }`}
+                    onClick={() => {
+                      if (isPersisting || disabled) return;
+                      setSelectedReaction((prev) => {
+                        if (prev && prev.type === reaction.type) {
+                          setLocalReactionCount((c) => Math.max(0, c - 1));
+                          pendingReactionRef.current = null;
+                          schedulePersist();
+                          scheduleCloseReactions();
+                          return null;
+                        }
+                        if (!prev) {
+                          setLocalReactionCount((c) => c + 1);
+                          pendingReactionRef.current = reaction;
+                          schedulePersist();
+                          scheduleCloseReactions();
+                          return reaction;
+                        }
                         pendingReactionRef.current = reaction;
                         schedulePersist();
                         scheduleCloseReactions();
                         return reaction;
-                      }
-                      pendingReactionRef.current = reaction;
-                      schedulePersist();
-                      scheduleCloseReactions();
-                      return reaction;
-                    });
-                  }}
-                  type="button"
-                  aria-label={reaction.name}
-                  title={reaction.name}
-                >
-                  {reaction.icon}
-                </button>
-              );
-            })}
-          </div>
+                      });
+                    }}
+                    type="button"
+                    aria-label={reaction.name}
+                    title={reaction.name}
+                  >
+                    {reaction.icon}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Comment Button */}
+        {showCommentButton && (
+          <button
+            onClick={onCommentClick}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium hover:bg-secondary/60 hover:text-foreground transition-all duration-150 cursor-pointer"
+            aria-label="Open comments"
+            disabled={disabled}
+            type="button"
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span className="font-semibold text-xs">{post.commentsCount ?? 0}</span>
+          </button>
         )}
       </div>
-      {showCommentButton && (
-        <button
-          onClick={onCommentClick}
-          className="hover:text-emerald-400 flex items-center gap-2 text-2xl transition-colors"
-          aria-label="Open comments"
-          disabled={disabled}
-          type="button"
-        >
-          <FaRegCommentDots /> {post.commentsCount ?? 0}
-        </button>
-      )}
+
+      {/* Share / Copy link */}
+      <button
+        onClick={handleShare}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium hover:bg-secondary/60 hover:text-foreground transition-all duration-150 cursor-pointer"
+        aria-label="Share post"
+        type="button"
+        title="Share post"
+      >
+        <Share2 className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 };

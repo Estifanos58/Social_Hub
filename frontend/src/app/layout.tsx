@@ -1,12 +1,7 @@
-"use client";
-
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ApolloProvider } from "@apollo/client/react";
-import { client } from "../../apolloClient";
-import { Toaster } from "@/components/ui/sonner";
-import ProtectedRoute from "@/components/custom/auth/ProtectedRoute";
-import { Suspense } from "react";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,22 +13,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const metadata: Metadata = {
+  title: "Social Hub",
+  description: "A modern real-time social platform",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground min-h-screen`}
       >
-        <ApolloProvider client={client}>
-          <Toaster />
-          <Suspense fallback={null}>
-            <ProtectedRoute>{children}</ProtectedRoute>
-          </Suspense>
-        </ApolloProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

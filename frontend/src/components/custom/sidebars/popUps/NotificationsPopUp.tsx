@@ -4,6 +4,8 @@ import React, { useRef } from 'react';
 import Image from 'next/image';
 import { useQuery } from '@apollo/client/react';
 import { GET_NOTIFICATIONS } from '@/graphql/queries/notification/getNotifications';
+import { Bell, X, MessageSquare, Heart, UserPlus, Trash2, LogIn } from 'lucide-react';
+import { formatRelative } from '@/lib/utils';
 
 interface NotificationsPopUpProps {
   setShowPopup: (value: boolean) => void;
@@ -23,7 +25,7 @@ type NotificationItem = {
 };
 
 function formatTitle(n: NotificationItem) {
-  const actorName = [n.actor?.firstname, n.actor?.lastname].filter(Boolean).join(' ');
+  const actorName = [n.actor?.firstname, n.actor?.lastname].filter(Boolean).join(' ') || 'Someone';
   switch (n.type) {
     case 'COMMENT_ON_POST':
       return `${actorName} commented on your post`;
@@ -34,11 +36,27 @@ function formatTitle(n: NotificationItem) {
     case 'NEW_FOLLOWER':
       return `${actorName} started following you`;
     case 'POST_DELETED':
-      return `Your post was deleted`;
+      return `Your post was removed`;
     case 'LOGIN':
       return `New login to your account`;
     default:
-      return `Notification`;
+      return `Notification from ${actorName}`;
+  }
+}
+
+function getNotificationIcon(type: string) {
+  switch (type) {
+    case 'COMMENT_ON_POST':
+    case 'REPLY_ON_COMMENT':
+      return <MessageSquare className="h-3 w-3 text-sky-400" />;
+    case 'REACTION_ON_POST':
+      return <Heart className="h-3 w-3 text-rose-400" />;
+    case 'NEW_FOLLOWER':
+      return <UserPlus className="h-3 w-3 text-emerald-400" />;
+    case 'POST_DELETED':
+      return <Trash2 className="h-3 w-3 text-destructive" />;
+    default:
+      return <Bell className="h-3 w-3 text-primary" />;
   }
 }
 
@@ -72,56 +90,83 @@ function NotificationsPopUp({ setShowPopup, setIsCollapsed }: NotificationsPopUp
   };
 
   return (
-    <div className="p-6 h-full flex flex-col">
+    <div className="p-4 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white">Notifications</h2>
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/70">
+        <div className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-primary" />
+          <h2 className="text-base font-bold tracking-tight text-foreground">Notifications</h2>
+        </div>
         <button
           onClick={() => { setShowPopup(false); setIsCollapsed(false); }}
-          className="text-gray-400 hover:text-white"
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+          aria-label="Close"
         >
-          ✕
+          <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto space-y-3">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto space-y-2 pr-1">
         {/* Loading skeleton */}
-        {loading && Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
-            <div className="w-10 h-10 bg-gray-700 rounded-full" />
-            <div className="flex-1">
-              <div className="w-48 h-3 bg-gray-700 rounded mb-2" />
-              <div className="w-32 h-3 bg-gray-700 rounded" />
+        {loading && Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-secondary/30 animate-pulse">
+            <div className="w-9 h-9 bg-muted/40 rounded-full shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="w-36 h-3 bg-muted/40 rounded" />
+              <div className="w-24 h-2.5 bg-muted/30 rounded" />
             </div>
           </div>
         ))}
 
         {/* Items */}
-
         {!loading && list.map((n) => (
-          <div key={n.id} className="flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg transition-colors">
-            <Image
-              src={n.actor?.avatarUrl || '/noAvatar.png'}
-              alt={n.actor?.firstname || 'actor'}
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full object-cover"
-            />
-            <div className="flex-1">
-              <p className="text-white text-sm">{formatTitle(n)}</p>
-              <div className="text-gray-400 text-xs mt-0.5 truncate">
-                {n.post?.content || n.comment?.content || ''}
-              </div>
-              <div className="text-gray-500 text-[10px] mt-1">
-                {new Date(n.createdAt).toLocaleString()}
-              </div>
+          <div
+            key={n.id}
+            className={`flex items-start gap-3 p-3 rounded-xl transition-all duration-150 relative group ${
+              n.isRead
+                ? "hover:bg-secondary/40 text-muted-foreground"
+                : "bg-primary/5 hover:bg-primary/10 border border-primary/20 text-foreground"
+            }`}
+          >
+            <div className="relative shrink-0">
+              <Image
+                src={n.actor?.avatarUrl || '/noAvatar.png'}
+                alt={n.actor?.firstname || 'actor'}
+                width={36}
+                height={36}
+                className="w-9 h-9 rounded-full object-cover ring-1 ring-border"
+              />
+              <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-card ring-1 ring-border shadow-xs">
+                {getNotificationIcon(n.type)}
+              </span>
             </div>
-            {!n.isRead && <span className="w-2 h-2 rounded-full bg-blue-400" />}
+
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-foreground leading-snug">
+                {formatTitle(n)}
+              </p>
+              {(n.post?.content || n.comment?.content) && (
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                  &ldquo;{n.post?.content || n.comment?.content}&rdquo;
+                </p>
+              )}
+              <span className="text-[10px] text-muted-foreground/75 font-mono mt-1 block">
+                {formatRelative(n.createdAt)}
+              </span>
+            </div>
+
+            {!n.isRead && (
+              <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1 shadow-xs shadow-primary/50" />
+            )}
           </div>
         ))}
 
         {!loading && list.length === 0 && (
-          <div className="text-center py-8 text-gray-400">No notifications yet.</div>
+          <div className="text-center py-16 text-muted-foreground text-xs space-y-1">
+            <Bell className="h-6 w-6 mx-auto opacity-30 mb-2" />
+            <p className="font-semibold text-foreground">All caught up</p>
+            <p>No new notifications at this time.</p>
+          </div>
         )}
       </div>
     </div>

@@ -123,31 +123,17 @@ export default function ProtectedRoute({ children }: Props) {
       return;
     }
 
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const refreshToken = window.localStorage.getItem("refreshToken");
-    if (!refreshToken) {
-      clearAuth();
-      redirectToAuth();
-      setLoading(false);
-      return;
-    }
-
-    if (user && accessToken) {
+    if (user) {
       setLoading(false);
       return;
     }
 
     fetchUser().catch(() => {
-      window.localStorage.removeItem("refreshToken");
       clearAuth();
       redirectToAuth();
       setLoading(false);
     });
   }, [
-    accessToken,
     clearAuth,
     fetchUser,
     isPublicRoute,
@@ -166,7 +152,6 @@ export default function ProtectedRoute({ children }: Props) {
       return;
     }
 
-    window.localStorage.removeItem("refreshToken");
     clearAuth();
     redirectToAuth();
     setLoading(false);
@@ -177,7 +162,6 @@ export default function ProtectedRoute({ children }: Props) {
       return;
     }
 
-    window.localStorage.removeItem("refreshToken");
     clearAuth();
     redirectToAuth();
     setLoading(false);

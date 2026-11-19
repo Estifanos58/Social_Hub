@@ -1,7 +1,5 @@
-import { Field, GraphQLISODateTime, Int, ObjectType } from "@nestjs/graphql";
-import { ChatroomUserDto, MessageDto, UserDto } from ".";
-
-
+import { Field, GraphQLISODateTime, Int, ObjectType } from '@nestjs/graphql';
+import { ChatroomUserDto, MessageDto, UserDto } from '.';
 
 @ObjectType()
 export class ChatroomDto {

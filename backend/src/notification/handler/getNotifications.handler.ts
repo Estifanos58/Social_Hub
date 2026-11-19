@@ -3,7 +3,9 @@ import { PrismaService } from 'src/prisma.service';
 import { GetNotificationsQuery } from '../query/getNotifications.query';
 
 @QueryHandler(GetNotificationsQuery)
-export class GetNotificationsHandler implements IQueryHandler<GetNotificationsQuery> {
+export class GetNotificationsHandler
+  implements IQueryHandler<GetNotificationsQuery>
+{
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetNotificationsQuery) {
@@ -28,12 +30,14 @@ export class GetNotificationsHandler implements IQueryHandler<GetNotificationsQu
     });
 
     // Mark all unread notifications in this batch as read (fire and forget)
-    const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
+    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
     if (unreadIds.length > 0) {
-      this.prisma.notification.updateMany({
-        where: { id: { in: unreadIds }, recipientId: userId, isRead: false },
-        data: { isRead: true, readAt: new Date() },
-      }).catch(() => {}); // ignore errors
+      this.prisma.notification
+        .updateMany({
+          where: { id: { in: unreadIds }, recipientId: userId, isRead: false },
+          data: { isRead: true, readAt: new Date() },
+        })
+        .catch(() => {}); // ignore errors
     }
 
     return notifications;

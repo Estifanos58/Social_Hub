@@ -1,31 +1,52 @@
+"use client";
+
+import React from "react";
+import { MessageSquare } from "lucide-react";
+
 export const MessagesSkeleton = () => (
-  <div className="flex flex-col gap-6 px-8 py-10">
-    {Array.from({ length: 6 }).map((_, index) => (
-      <div key={index} className="flex items-start gap-3">
-        <div className="h-10 w-10 rounded-full bg-white/10 animate-pulse" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-1/3 rounded bg-white/10 animate-pulse" />
-          <div className="h-4 w-2/3 rounded bg-white/10 animate-pulse" />
-          <div className="h-4 w-1/4 rounded bg-white/10 animate-pulse" />
+  <div className="flex flex-col gap-4 py-4">
+    {Array.from({ length: 5 }).map((_, index) => {
+      const isRight = index % 2 === 1;
+      return (
+        <div
+          key={index}
+          className={`flex items-end gap-2.5 animate-pulse ${
+            isRight ? "flex-row-reverse" : "flex-row"
+          }`}
+        >
+          <div className="h-8 w-8 rounded-full bg-secondary/80 shrink-0" />
+          <div
+            className={`rounded-2xl p-3.5 space-y-1.5 ${
+              isRight
+                ? "bg-primary/20 rounded-tr-xs w-48 sm:w-64"
+                : "bg-secondary/50 border border-border/50 rounded-tl-xs w-56 sm:w-72"
+            }`}
+          >
+            <div className="h-3 w-3/4 bg-white/20 rounded" />
+            <div className="h-2.5 w-1/2 bg-white/10 rounded" />
+          </div>
         </div>
-      </div>
-    ))}
+      );
+    })}
   </div>
 );
 
 export const ChatHeaderSkeleton = () => (
-  <div className="flex items-center gap-4 border-b border-white/10 bg-white/5 px-8 py-6">
-    <div className="h-16 w-16 rounded-full bg-white/10 animate-pulse" />
-    <div className="space-y-2">
-      <div className="h-5 w-40 rounded bg-white/10 animate-pulse" />
-      <div className="h-4 w-24 rounded bg-white/10 animate-pulse" />
+  <div className="flex items-center gap-3 border-b border-border/70 bg-card/60 px-6 py-3.5 animate-pulse">
+    <div className="h-10 w-10 rounded-full bg-secondary/80 shrink-0" />
+    <div className="space-y-1.5">
+      <div className="h-3.5 w-32 rounded bg-secondary/80" />
+      <div className="h-2.5 w-20 rounded bg-secondary/60" />
     </div>
   </div>
 );
 
 export const EmptyState = () => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center text-white/70">
-    <p className="text-lg font-semibold text-white">No messages yet</p>
-    <p className="text-sm">Start the conversation by sending the first message.</p>
+  <div className="flex flex-1 flex-col items-center justify-center gap-2 py-20 text-center text-muted-foreground">
+    <div className="h-12 w-12 rounded-2xl bg-secondary/60 border border-border/60 flex items-center justify-center mb-1 text-primary">
+      <MessageSquare className="h-6 w-6" />
+    </div>
+    <p className="text-sm font-semibold text-foreground">No messages yet</p>
+    <p className="text-xs max-w-xs">Send a message below to start this conversation.</p>
   </div>
 );

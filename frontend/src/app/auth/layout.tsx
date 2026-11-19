@@ -5,19 +5,20 @@ export default function AuthLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="flex min-h-screen bg-gray-900 items-center justify-center p-4">
-      <div className="grid grid-cols-1 min-h-[500px] md:grid-cols-2 w-full max-w-5xl bg-gray-900 border border-gray-500 rounded-4xl shadow-lg overflow-hidden text-gray-100">
-        {/* Left side (Image) */}
-        <div className="relative hidden md:flex items-center justify-center p-2">
-          <div className="relative h-full w-full overflow-hidden rounded-4xl bg-slate-950">
-            <AuthShowcase />
-            <div className="pointer-events-none absolute top-4 left-4 text-2xl font-bold text-white">
-              🦋
-            </div>
-          </div>
+    <div className="flex min-h-screen bg-background items-center justify-center p-4 md:p-8 relative overflow-hidden">
+      {/* Background radial gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/30 via-background to-background pointer-events-none" />
+
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 w-full max-w-4xl bg-card/90 border border-border/80 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-md min-h-[580px]">
+        {/* Left Side Product Showcase */}
+        <div className="hidden md:block h-full">
+          <AuthShowcase />
         </div>
 
-        <>{children}</>
+        {/* Right Side Form */}
+        <div className="flex flex-col justify-center p-6 md:p-10">
+          {children}
+        </div>
       </div>
     </div>
   );

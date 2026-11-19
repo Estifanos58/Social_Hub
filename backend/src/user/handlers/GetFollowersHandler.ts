@@ -1,8 +1,8 @@
-import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
-import { GetFollowersQuery } from "../query/GetFollowers.query";
-import { HttpException, InternalServerErrorException } from "@nestjs/common";
-import { PrismaService } from "src/prisma.service";
-import { GetFollowersDto } from "../types/getFollow.type";
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { GetFollowersQuery } from '../query/GetFollowers.query';
+import { HttpException, InternalServerErrorException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma.service';
+import { GetFollowersDto } from '../types/getFollow.type';
 
 @QueryHandler(GetFollowersQuery)
 export class GetFollowersHandler implements IQueryHandler<GetFollowersQuery> {
@@ -24,7 +24,7 @@ export class GetFollowersHandler implements IQueryHandler<GetFollowersQuery> {
           skip,
           take: take + 1,
           include: {
-            follower: true, 
+            follower: true,
           },
         }),
       ]);
@@ -32,15 +32,14 @@ export class GetFollowersHandler implements IQueryHandler<GetFollowersQuery> {
       const hasMore = users.length > take;
 
       return new GetFollowersDto({
-        users: users.map((f) => (f.follower)).slice(0, take),
+        users: users.map((f) => f.follower).slice(0, take),
         totalFollowers,
         totalFollowing,
-        hasMore
+        hasMore,
       });
-      
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException("Server Error Happened");
+      throw new InternalServerErrorException('Server Error Happened');
     }
   }
 }

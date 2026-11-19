@@ -33,7 +33,7 @@ const CommandHandlers = [
   GithubOAuthHandler,
   ForgotPasswordHandler,
   ResetPasswordHandler,
-  VerifyEmailHandler
+  VerifyEmailHandler,
 ];
 const EventHandlers = [
   VerificationTokenEventHandler,
@@ -45,11 +45,16 @@ const EventHandlers = [
 const QueryHandlers = [GetCurrentUserHandler];
 
 @Module({
-  imports: [CqrsModule, HttpModule, ConfigModule, MailModule, NotificationModule],
+  imports: [
+    CqrsModule,
+    HttpModule,
+    ConfigModule,
+    MailModule,
+    NotificationModule,
+  ],
   controllers: [AuthController],
   providers: [
     AuthResolver,
-    PrismaService,
     JwtService,
     ...CommandHandlers,
     ...EventHandlers,

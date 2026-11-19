@@ -30,28 +30,28 @@ export const MessageImageModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-4xl overflow-hidden border border-white/10 bg-gray-900 p-0 text-white lg:max-w-5xl"
+        className="w-full max-w-4xl overflow-hidden border border-border/80 bg-card/95 p-0 text-foreground lg:max-w-5xl rounded-2xl shadow-2xl backdrop-blur-md"
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-          <p className="text-sm text-white/70">
-            {senderName ? `${senderName} sent an image` : "Image preview"}
+        <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+          <p className="text-xs font-semibold text-foreground">
+            {senderName ? `${senderName}'s attachment` : "Image preview"}
           </p>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               asChild
-              className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+              className="border-border/80 bg-secondary/50 text-foreground hover:bg-secondary rounded-xl text-xs h-8"
             >
               <a
                 href={imageUrl}
                 download={filename}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2"
+                className="flex items-center gap-1.5"
               >
-                <Download className="h-4 w-4" />
-                <span className="text-xs font-medium">Download</span>
+                <Download className="h-3.5 w-3.5" />
+                <span>Save</span>
               </a>
             </Button>
             <Button
@@ -60,20 +60,21 @@ export const MessageImageModal = ({
               size="icon"
               onClick={() => onOpenChange(false)}
               aria-label="Close image preview"
-              className="text-white/80 hover:text-white"
+              className="text-muted-foreground hover:text-foreground h-8 w-8"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <div className="relative flex items-center justify-center bg-black/80">
-          <div className="relative h-[60vh] w-full max-w-full">
+        <div className="relative flex items-center justify-center bg-black/90 p-4">
+          <div className="relative h-[65vh] w-full max-w-full flex items-center justify-center">
             <Image
               src={imageUrl}
-              alt="message attachment preview"
+              alt={senderName ? `Sent by ${senderName}` : "Message attachment"}
               fill
-              sizes="(max-width: 768px) 100vw, 800px"
-              className="object-contain"
+              sizes="(max-width: 1024px) 100vw, 1200px"
+              className="object-contain rounded-lg"
+              priority
             />
           </div>
         </div>

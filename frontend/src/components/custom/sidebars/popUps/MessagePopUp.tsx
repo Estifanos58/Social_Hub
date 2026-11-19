@@ -5,7 +5,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, MessageSquare, X } from "lucide-react";
 
 import Searching, { MessageSkeletonList } from "./Searching";
 import { useUserChatrooms } from "@/hooks/chatroom/useUserChatrooms";
@@ -16,7 +16,6 @@ import { ChatroomMeta, ChatroomListItem, DEFAULT_AVATAR } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { CreateGroupModal } from "../../../modal/CreateGroupModal";
 import { useUserPresence } from "@/hooks/message/useUserPresence";
-
 
 interface MessagePopUpProps {
   setShowPopup: (value: boolean) => void;
@@ -37,7 +36,7 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
       chatrooms
         .filter((room) => !room.isGroup && room.otherUserId)
         .map((room) => room.otherUserId as string),
-    [chatrooms],
+    [chatrooms]
   );
 
   const initialLastSeen = useMemo(() => {
@@ -66,7 +65,7 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
         lastSeenAt: room.otherUserLastSeenAt ?? null,
       };
     },
-    [],
+    []
   );
 
   const handleOpenChatroom = useCallback(
@@ -103,7 +102,7 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
       }
       router.push(`/message/${routeId}`);
     },
-    [chatrooms, isMobile, presence, router, setIsCollapsed, setSelectedChatRoomId, setSelectedChatroomMeta, setShowPopup, toChatroomMeta],
+    [chatrooms, isMobile, presence, router, setIsCollapsed, setSelectedChatRoomId, setSelectedChatroomMeta, setShowPopup, toChatroomMeta]
   );
 
   const handleGroupCreated = useCallback(
@@ -111,7 +110,7 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
       await refetch();
       handleOpenChatroom(chatroomId, chatroomId);
     },
-    [handleOpenChatroom, refetch],
+    [handleOpenChatroom, refetch]
   );
 
   const renderChatroomList = () => {
@@ -121,25 +120,26 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
 
     if (error) {
       return (
-        <div className="space-y-4 py-8 text-center">
-          <p className="text-gray-400">We couldn&apos;t load your conversations.</p>
-          <button
-            type="button"
-            onClick={() => {
-              void refetch();
-            }}
-            className="inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+        <div className="space-y-3 py-8 text-center">
+          <p className="text-muted-foreground text-xs">Couldn&apos;t load conversations.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { void refetch(); }}
+            className="text-xs"
           >
             Try again
-          </button>
+          </Button>
         </div>
       );
     }
 
     if (chatrooms.length === 0) {
       return (
-        <div className="text-center py-8">
-          <p className="text-gray-400">No conversations yet. Start one by searching for a user.</p>
+        <div className="text-center py-12 text-muted-foreground text-xs space-y-1">
+          <MessageSquare className="h-6 w-6 mx-auto opacity-30 mb-2" />
+          <p className="font-semibold text-foreground">No conversations yet</p>
+          <p>Search for a connection to start messaging.</p>
         </div>
       );
     }
@@ -150,34 +150,35 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
     const renderSection = (
       title: string,
       rooms: typeof chatrooms,
-  emptyState: string,
-  action?: ReactNode,
+      emptyState: string,
+      action?: ReactNode
     ) => (
       <div className="flex h-1/2 flex-col">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-white/80">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {title}
             </h3>
             {action}
           </div>
-          <span className="text-xs text-white/40">{rooms.length}</span>
+          <span className="text-[11px] font-mono text-muted-foreground/70 bg-secondary/80 px-1.5 py-0.5 rounded-full">
+            {rooms.length}
+          </span>
         </div>
-        <div className="mt-3 bg-white/20 h-[0.1px]" />
-        <div className="mt-3 flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {rooms.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-center text-xs text-gray-500">
+            <div className="flex h-full items-center justify-center text-center text-xs text-muted-foreground/70">
               {emptyState}
             </div>
           ) : (
-            <div className="space-y-3 pr-1">
+            <div className="space-y-1.5 pr-1">
               {rooms.map((chatroom) => {
                 const lastMessage = chatroom.lastMessage;
                 const lastMessagePreview = lastMessage
                   ? lastMessage.content?.trim()
                     ? lastMessage.content.trim()
                     : lastMessage.imageUrl
-                    ? "Sent a photo"
+                    ? "Sent an image"
                     : "New chat"
                   : "Start the conversation";
                 const timestamp = lastMessage?.createdAt
@@ -196,32 +197,42 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
                     key={chatroom.id}
                     type="button"
                     onClick={() => handleOpenChatroom(chatroom.id, chatroom.routeId, chatroomMeta)}
-                    className="flex w-full items-center justify-between rounded-lg bg-gray-900/40 p-3 text-left transition hover:bg-gray-700"
+                    className="flex w-full items-center justify-between rounded-xl p-2.5 text-left transition-all duration-150 hover:bg-secondary/50 group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="relative h-10 w-10">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="relative h-9 w-9 shrink-0">
                         <Image
                           src={chatroom.avatarUrl}
                           alt={chatroom.name}
-                          width={40}
-                          height={40}
-                          className="h-10 w-10 rounded-full object-cover"
+                          width={36}
+                          height={36}
+                          className="h-9 w-9 rounded-full object-cover ring-1 ring-border"
                         />
                         {isDirect && isOnline && (
-                          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-gray-900 bg-emerald-400" />
+                          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500" />
                         )}
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-white">{chatroom.name}</p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                            {chatroom.name}
+                          </p>
+                          {timestamp && (
+                            <span className="text-[10px] text-muted-foreground/75 font-mono shrink-0">
+                              {timestamp}
+                            </span>
+                          )}
+                        </div>
                         {isDirect && (
-                          <p className="text-[11px] font-medium text-emerald-400/90">
-                            {isOnline ? "Online now" : lastSeenLabel ? `Last seen ${lastSeenLabel}` : "Offline"}
+                          <p className="text-[10px] text-emerald-400 font-medium">
+                            {isOnline ? "Online" : lastSeenLabel ? `Seen ${lastSeenLabel}` : ""}
                           </p>
                         )}
-                        <p className="line-clamp-1 text-xs text-gray-400">{lastMessagePreview}</p>
+                        <p className="line-clamp-1 text-[11px] text-muted-foreground">
+                          {lastMessagePreview}
+                        </p>
                       </div>
                     </div>
-                    {timestamp && <span className="text-xs text-gray-500">{timestamp}</span>}
                   </button>
                 );
               })}
@@ -232,7 +243,7 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
     );
 
     return (
-      <div className="flex h-full flex-col gap-6">
+      <div className="flex h-full flex-col gap-5">
         {renderSection("Direct Messages", directMessages, "No direct messages yet.")}
         {renderSection(
           "Group Chats",
@@ -244,40 +255,40 @@ function MessagePopUp({ setShowPopup, setIsCollapsed }: MessagePopUpProps) {
               variant="ghost"
               size="icon"
               onClick={() => setCreateGroupOpen(true)}
-              className="size-8 text-white/70"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               <span className="sr-only">Create group chat</span>
             </Button>
-          ),
+          )
         )}
       </div>
     );
   };
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white">Messages</h2>
-        <Link href='/'>
-        <button
-          onClick={() => {
-            setShowPopup(false);
-            setIsCollapsed(false);
-          }}
-          className="text-gray-400 hover:text-white"
-        >
-          ✕
-        </button>
+    <div className="p-4 h-full flex flex-col">
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/70">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-primary" />
+          <h2 className="text-base font-bold tracking-tight text-foreground">Messages</h2>
+        </div>
+        <Link href="/">
+          <button
+            onClick={() => {
+              setShowPopup(false);
+              setIsCollapsed(false);
+            }}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </Link>
       </div>
       <Searching
         scrollRef={scrollRef}
-        defaultContent={
-          <>
-            {renderChatroomList()}
-          </>
-        }
+        defaultContent={<>{renderChatroomList()}</>}
       />
       <CreateGroupModal
         open={isCreateGroupOpen}

@@ -11,7 +11,7 @@ export class GetPostType extends PickType(PostDto, [
   'createdBy',
   'images',
   'comments',
-  'reactions'
+  'reactions',
 ] as const) {
   @Field(() => Int)
   commentsCount: number;

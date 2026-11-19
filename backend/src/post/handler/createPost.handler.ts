@@ -45,7 +45,7 @@ export class CreatePostHandler implements ICommandHandler<CreatePostCommand> {
         },
       });
 
-      return "Post created Successfully";
+      return 'Post created Successfully';
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException('Failed to create post');

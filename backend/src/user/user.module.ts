@@ -1,21 +1,47 @@
-import { Module } from "@nestjs/common"
-import { ConfigModule } from "@nestjs/config"
-import { CqrsModule } from "@nestjs/cqrs"
-import { PrismaService } from "src/prisma.service"
-import { UserResolver } from "./user.resolver"
-import { FollowUserHandler, GetChatUsersHandler, GetFollowersHandler, GetFollowingHandler, GetUserChatroomsHandler, GetUserHandler, GetUsersToFollowHandler, SearchUsersHandler, UnFollowUserHandler, UpdateUserHandler } from "./handlers"
-import { JwtService } from "@nestjs/jwt"
-import { NotificationModule } from "src/notification/notification.module"
-import { NewFollowerEventHandler, UserDisconnectedEventHandler } from "./event"
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { CqrsModule } from '@nestjs/cqrs';
+import { UserResolver } from './user.resolver';
+import {
+  FollowUserHandler,
+  GetChatUsersHandler,
+  GetFollowersHandler,
+  GetFollowingHandler,
+  GetUserChatroomsHandler,
+  GetUserHandler,
+  GetUsersToFollowHandler,
+  SearchUsersHandler,
+  UnFollowUserHandler,
+  UpdateUserHandler,
+} from './handlers';
+import { JwtService } from '@nestjs/jwt';
+import { NotificationModule } from 'src/notification/notification.module';
+import { NewFollowerEventHandler, UserDisconnectedEventHandler } from './event';
 
-
-const CommandHandlers = [FollowUserHandler, UnFollowUserHandler, UpdateUserHandler]
-const EventHandlers = [NewFollowerEventHandler, UserDisconnectedEventHandler]
-const QueryHandlers = [GetUserHandler, GetUsersToFollowHandler, GetFollowersHandler, GetFollowingHandler, SearchUsersHandler, GetChatUsersHandler, GetUserChatroomsHandler]
+const CommandHandlers = [
+  FollowUserHandler,
+  UnFollowUserHandler,
+  UpdateUserHandler,
+];
+const EventHandlers = [NewFollowerEventHandler, UserDisconnectedEventHandler];
+const QueryHandlers = [
+  GetUserHandler,
+  GetUsersToFollowHandler,
+  GetFollowersHandler,
+  GetFollowingHandler,
+  SearchUsersHandler,
+  GetChatUsersHandler,
+  GetUserChatroomsHandler,
+];
 
 @Module({
-    imports: [CqrsModule, ConfigModule, NotificationModule],
-    providers: [UserResolver,JwtService, PrismaService, ...CommandHandlers, ...QueryHandlers, ...EventHandlers],
+  imports: [CqrsModule, ConfigModule, NotificationModule],
+  providers: [
+    UserResolver,
+    JwtService,
+    ...CommandHandlers,
+    ...QueryHandlers,
+    ...EventHandlers,
+  ],
 })
-
 export class UserModule {}

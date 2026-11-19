@@ -62,11 +62,23 @@ export class AddUserToChatroomHandler
     }
 
     if (!chatroom.isGroup) {
-      throw new BadRequestException('Members can only be added to group chatrooms');
+      throw new BadRequestException(
+        'Members can only be added to group chatrooms',
+      );
     }
 
-    if (chatroom.createdById !== userId) {
-      throw new ForbiddenException('Only the chatroom creator can add members');
+    const callerMembership = chatroom.memberships.find(
+      (m) => m.userId === userId,
+    );
+    const isAuthorized =
+      chatroom.createdById === userId ||
+      callerMembership?.role === ChatroomRole.OWNER ||
+      callerMembership?.role === ChatroomRole.ADMIN;
+
+    if (!isAuthorized) {
+      throw new ForbiddenException(
+        'Only the chatroom creator or admins can add members',
+      );
     }
 
     const users = await this.prismaService.user.findMany({
@@ -91,7 +103,9 @@ export class AddUserToChatroomHandler
       select: { userId: true },
     });
 
-    const existingMembershipIds = new Set(existingMemberships.map((item) => item.userId));
+    const existingMembershipIds = new Set(
+      existingMemberships.map((item) => item.userId),
+    );
     const userIdsToAdd = uniqueUserIds.filter(
       (id) => !existingMembershipIds.has(id),
     );
@@ -124,7 +138,9 @@ export class AddUserToChatroomHandler
       });
 
       if (!updatedChatroom) {
-        throw new InternalServerErrorException('Failed to load updated chatroom');
+        throw new InternalServerErrorException(
+          'Failed to load updated chatroom',
+        );
       }
 
       return {

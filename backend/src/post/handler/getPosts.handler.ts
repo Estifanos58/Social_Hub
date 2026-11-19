@@ -1,8 +1,12 @@
-import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
-import { PrismaService } from "src/prisma.service";
-import { HttpException, InternalServerErrorException, NotFoundException } from "@nestjs/common";
-import { GetPostsQuery } from "../query/getPosts.query";
-import { PaginatedPostsDto} from "../types/paginatedPosts.type";
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { PrismaService } from 'src/prisma.service';
+import {
+  HttpException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { GetPostsQuery } from '../query/getPosts.query';
+import { PaginatedPostsDto } from '../types/paginatedPosts.type';
 
 @QueryHandler(GetPostsQuery)
 export class GetPostsHandler implements IQueryHandler<GetPostsQuery> {
@@ -13,12 +17,33 @@ export class GetPostsHandler implements IQueryHandler<GetPostsQuery> {
     // console.log(`Executing GetPostsHandler with userId: ${userId}`);
 
     try {
+      const privacyFilter = userId
+        ? {
+            OR: [
+              { createdBy: { isPrivate: false } },
+              { createdById: userId },
+              {
+                createdBy: {
+                  followers: {
+                    some: { followerId: userId },
+                  },
+                },
+              },
+            ],
+          }
+        : {
+            createdBy: { isPrivate: false },
+          };
+
       const posts = await this.prisma.post.findMany({
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
-        where: { deletedAt: null },
-        orderBy: { createdAt: "desc" },
+        where: {
+          deletedAt: null,
+          ...privacyFilter,
+        },
+        orderBy: { createdAt: 'desc' },
         include: {
           createdBy: true,
           images: true,
@@ -29,7 +54,7 @@ export class GetPostsHandler implements IQueryHandler<GetPostsQuery> {
         },
       });
 
-      if(!posts) throw new NotFoundException("No posts found");
+      if (!posts) throw new NotFoundException('No posts found');
 
       const hasMore = posts.length > take;
 
@@ -46,19 +71,21 @@ export class GetPostsHandler implements IQueryHandler<GetPostsQuery> {
           images: post.images,
           commentsCount: post._count.comments,
           reactionsCount: post._count.reactions,
-          userReaction: userId ? post.reactions.find(r => r.createdById === userId)?.type || null : null,
-        })
+          userReaction: userId
+            ? post.reactions.find((r) => r.createdById === userId)?.type || null
+            : null,
+        }),
       );
 
       // console.log(`Fetched MAPPEDPOSTS ${mappedPosts}`);
 
       return {
         posts: mappedPosts,
-        hasMore
-      }
+        hasMore,
+      };
     } catch (error) {
-      if(error instanceof HttpException) throw error;
-      throw new InternalServerErrorException("Failed to fetch posts");
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException('Failed to fetch posts');
     }
   }
 }

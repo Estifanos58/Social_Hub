@@ -16,13 +16,18 @@ import { useUserStore } from "./src/store/userStore";
 loadErrorMessages();
 loadDevMessages();
 
-// 🔹 HTTP Link for queries & mutations
+const apiUrl =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/graphql";
+const wsUrl =
+  process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:5000/graphql";
+
+// HTTP Link for queries & mutations
 const httpLink = new HttpLink({
-  uri: process.env.NEXT_PUBLIC_API_URL,
-  credentials: "include", // keep compatibility with cookie-based flows
+  uri: apiUrl,
+  credentials: "include", // send httpOnly cookies across requests
 });
 
-// 🔹 Attach auth headers to every HTTP request
+// Attach auth headers to every HTTP request if available in memory
 const authLink = setContext((_, { headers }) => {
   const { accessToken } = useUserStore.getState();
   const nextHeaders: Record<string, string> = {};
@@ -41,34 +46,24 @@ const authLink = setContext((_, { headers }) => {
     nextHeaders.Authorization = `Bearer ${accessToken}`;
   }
 
-  if (typeof window !== "undefined") {
-    const refreshToken = window.localStorage.getItem("refreshToken");
-    if (refreshToken) {
-      nextHeaders["x-refresh-token"] = refreshToken;
-    }
-  }
-
   return {
     headers: nextHeaders,
   };
 });
 
-// 🔹 Capture refreshed tokens from responses
+// Capture refreshed access token from response headers
 const afterwareLink = new ApolloLink((operation, forward) =>
   new Observable((observer) => {
     const subscription = forward(operation).subscribe({
       next: (result) => {
         if (typeof window !== "undefined") {
-          const contextResponse = operation.getContext().response as Response | undefined;
+          const contextResponse = operation.getContext().response as
+            | Response
+            | undefined;
           const accessFromHeader = contextResponse?.headers?.get("x-access-token");
-          const refreshFromHeader = contextResponse?.headers?.get("x-refresh-token");
 
           if (accessFromHeader) {
             useUserStore.getState().setAccessToken(accessFromHeader);
-          }
-
-          if (refreshFromHeader) {
-            window.localStorage.setItem("refreshToken", refreshFromHeader);
           }
         }
 
@@ -81,37 +76,33 @@ const afterwareLink = new ApolloLink((operation, forward) =>
     return () => {
       subscription.unsubscribe();
     };
-  }),
+  })
 );
 
-// 🔹 WebSocket Link for subscriptions
-const wsLink = typeof window !== "undefined"
-  ? new GraphQLWsLink(
-      createClient({
-        url: process.env.NEXT_PUBLIC_WS_URL!,
-        retryAttempts: 3,
-        connectionParams: () => {
-          const { accessToken } = useUserStore.getState();
-          const params: Record<string, string> = {};
+// WebSocket Link for subscriptions with unified auth
+const wsLink =
+  typeof window !== "undefined"
+    ? new GraphQLWsLink(
+        createClient({
+          url: wsUrl,
+          retryAttempts: 5,
+          connectionParams: () => {
+            const { accessToken } = useUserStore.getState();
+            const params: Record<string, string> = {};
 
-          if (accessToken) {
-            params.Authorization = `Bearer ${accessToken}`;
-          }
+            if (accessToken) {
+              params.Authorization = `Bearer ${accessToken}`;
+            }
 
-          const refreshToken = window.localStorage.getItem("refreshToken");
-          if (refreshToken) {
-            params["x-refresh-token"] = refreshToken;
-          }
-
-          return params;
-        },
-      }),
-    )
-  : null;
+            return params;
+          },
+        })
+      )
+    : null;
 
 const httpPipeline = ApolloLink.from([authLink, afterwareLink, httpLink]);
 
-// 🔹 Split based on operation type
+// Split based on operation type
 const splitLink = wsLink
   ? ApolloLink.split(
       ({ query }) => {
@@ -121,8 +112,8 @@ const splitLink = wsLink
           definition.operation === "subscription"
         );
       },
-      wsLink, // subscriptions go here
-      httpPipeline // queries & mutations go here
+      wsLink,
+      httpPipeline
     )
   : httpPipeline;
 

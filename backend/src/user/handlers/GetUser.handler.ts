@@ -20,9 +20,10 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery> {
         where: { id: userId },
         include: {
           posts: {
+            where: { deletedAt: null },
             include: {
               images: { take: 1 }, // grab first image
-              comments: true,
+              comments: { where: { deletedAt: null } },
               reactions: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -35,22 +36,26 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery> {
       // privacy logic
       let canView = true;
       if (user.id !== requesterId && user.isPrivate) {
-        const isFollowing = await this.prisma.follower.findUnique({
-          where: {
-            followerId_followingId: {
-              followerId: requesterId,
-              followingId: userId,
+        let isFollowing = false;
+        if (requesterId) {
+          const followRecord = await this.prisma.follower.findUnique({
+            where: {
+              followerId_followingId: {
+                followerId: requesterId,
+                followingId: userId,
+              },
             },
-          },
-        });
+          });
+          isFollowing = Boolean(followRecord);
+        }
         if (!isFollowing) canView = false;
       }
 
       if (!canView) {
-        return this.buildUserProfile(user, false);
+        return this.buildUserProfile(user, false, requesterId === user.id);
       }
 
-      return this.buildUserProfile(user, true);
+      return this.buildUserProfile(user, true, true);
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException('Something went wrong');
@@ -60,6 +65,7 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery> {
   private async buildUserProfile(
     user: any,
     includeSensitive: boolean,
+    isOwner: boolean = false,
   ): Promise<any> {
     const followersCount = await this.prisma.follower.count({
       where: { followingId: user.id },
@@ -76,7 +82,7 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery> {
         firstname: user.firstname,
         lastname: user.lastname || '',
         bio: user.bio || '',
-        email: user.email,
+        email: isOwner ? user.email : includeSensitive ? user.email : '',
         isPrivate: user.isPrivate,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,

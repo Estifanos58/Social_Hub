@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import InputField from "../../shared/InputField";
+import { Loader2, ArrowRight } from "lucide-react";
 
 interface SignUpFormProps {
   formData: any;
@@ -22,8 +23,8 @@ export default function SignUpForm({
   loading,
 }: SignUpFormProps) {
   return (
-    <form className="space-y-4 text-gray-100" onSubmit={handleSubmit}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form className="space-y-3.5 text-foreground" onSubmit={handleSubmit}>
+      <div className="grid grid-cols-2 gap-3">
         <InputField
           name="firstname"
           label="First Name"
@@ -57,15 +58,15 @@ export default function SignUpForm({
         name="password"
         label="Password"
         type="password"
-        placeholder="********"
+        placeholder="••••••••"
         value={formData.password}
         onChange={handleChange}
         error={errors.password}
-        togglePassword // 👈 enables eye toggle
+        togglePassword
       />
 
       {/* Terms */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 pt-1">
         <Checkbox
           name="terms"
           id="terms"
@@ -76,24 +77,35 @@ export default function SignUpForm({
               terms: checked,
             }))
           }
+          className="rounded-md border-border/80"
         />
-        <label htmlFor="terms" className="text-sm text-gray-300 cursor-pointer">
+        <label htmlFor="terms" className="text-xs text-muted-foreground cursor-pointer select-none">
           I agree to the{" "}
-          <a href="#" className="text-blue-400 hover:underline">
-            Terms & Conditions
-          </a>
+          <span className="text-primary hover:underline font-medium">
+            Terms & Privacy Policy
+          </span>
         </label>
       </div>
       {errors.terms && (
-        <p className="text-red-500 text-xs mt-1">{errors.terms}</p>
+        <p className="text-destructive text-xs">{errors.terms}</p>
       )}
 
       <Button
         type="submit"
-        className="w-full bg-black rounded-4xl p-3 h-10 hover:bg-gray-800 text-white"
+        className="w-full h-10 rounded-xl bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 cursor-pointer mt-2"
         disabled={loading}
       >
-        {loading ? "Processing..." : "Create Account"}
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Creating account...
+          </span>
+        ) : (
+          <span className="flex items-center gap-2">
+            Get Started
+            <ArrowRight className="h-4 w-4" />
+          </span>
+        )}
       </Button>
     </form>
   );

@@ -8,6 +8,7 @@ import { ApolloDriver } from '@nestjs/apollo';
 import { join } from 'path';
 import { TokenService } from './token/token.service';
 import * as cookie from 'cookie';
+import { Request, Response } from 'express';
 import { TokenModule } from './token/token.module';
 import { MailModule } from './mail/mail.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -20,12 +21,14 @@ import { MessageModule } from './message/message.module';
 import { redisPubSub } from './pubsub';
 import { ChatroomModule } from './chatroom/chatroom.module';
 import { UserDisconnectedEvent } from './user/event';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    PrismaModule,
     AuthModule,
     TokenModule,
     MailModule,
@@ -46,27 +49,43 @@ import { UserDisconnectedEvent } from './user/event';
         eventEmitter: EventEmitter2,
       ) => {
         return {
-          autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+          autoSchemaFile:
+            configService.get<string>('NODE_ENV') === 'production'
+              ? true
+              : join(process.cwd(), 'src/schema.gql'),
           sortSchema: true,
           playground: configService.get<string>('NODE_ENV') !== 'production',
 
           subscriptions: {
-            // Enable both if you really need legacy support
             'graphql-ws': {
               onConnect: async (context) => {
-                const { extra } = context;
-                const req = extra.request; // Upgrade request
-                const rawCookies = req?.headers?.cookie;
-                if (!rawCookies) throw new Error('No cookies found');
+                const { connectionParams, extra } = context;
+                const req = extra?.request;
 
-                const parsedCookies = cookie.parse(rawCookies);
-                const refreshToken =
-                  parsedCookies['refreshToken'] ?? parsedCookies['refresh_token'];
-                if (!refreshToken) throw new Error('No refresh token found');
+                // 1. Check connectionParams (Authorization Bearer / token)
+                const paramToken = tokenService.extractToken(connectionParams);
+                let user = paramToken
+                  ? tokenService.validateToken(paramToken)
+                  : null;
 
-                const user = await tokenService.validateToken(refreshToken);
-                // console.log('USER FROM GRAPHQL-WS :', user)
-                if (!user) throw new Error('Invalid token');
+                // 2. If not found or invalid in params, check cookies from upgrade request
+                if (!user && req?.headers?.cookie) {
+                  const parsedCookies = cookie.parse(req.headers.cookie);
+                  const cookieToken =
+                    parsedCookies['accessToken'] ??
+                    parsedCookies['access_token'] ??
+                    parsedCookies['refreshToken'] ??
+                    parsedCookies['refresh_token'];
+                  if (cookieToken) {
+                    user = tokenService.validateToken(cookieToken);
+                  }
+                }
+
+                if (!user) {
+                  throw new Error(
+                    'Authentication required for WebSocket connection',
+                  );
+                }
 
                 const userId = user?.sub ?? user?.id;
                 if (!userId) {
@@ -94,7 +113,8 @@ import { UserDisconnectedEvent } from './user/event';
                   };
                 };
 
-                const userId = extra?.user?.sub ?? extra?.user?.id ?? extra?.userId;
+                const userId =
+                  extra?.user?.sub ?? extra?.user?.id ?? extra?.userId;
                 if (!userId) {
                   return;
                 }
@@ -117,16 +137,25 @@ import { UserDisconnectedEvent } from './user/event';
             },
           },
 
-          context: ({ req, res, connection }) => {
-            if (connection) {
-              return {
-                req,
-                res,
-                user: connection.context.user,
-                pubSub: redisPubSub,
-              };
-            }
-            return { req, res, pubSub: redisPubSub };
+          context: ({
+            req,
+            res,
+            extra,
+          }: {
+            req?: Request;
+            res?: Response;
+            extra?: any;
+          }) => {
+            const subscriptionUser = extra?.user;
+            const subscriptionUserId =
+              extra?.userId ?? extra?.user?.sub ?? extra?.user?.id;
+            return {
+              req,
+              res,
+              user: (req as any)?.user ?? subscriptionUser,
+              userId: (req as any)?.user?.sub ?? subscriptionUserId,
+              pubSub: redisPubSub,
+            };
           },
         };
       },

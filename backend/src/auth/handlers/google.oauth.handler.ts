@@ -23,72 +23,69 @@ export class GoogleOAuthHandler implements ICommandHandler<GoogleOAuthCommand> {
     // console.log("Executing GoogleOAuthHandler with code:", code);
 
     try {
-        // Step 1: Exchange code for tokens
-    const { access_token} =
-      await this.getGoogleOAuthTokens(code);
+      // Step 1: Exchange code for tokens
+      const { access_token } = await this.getGoogleOAuthTokens(code);
 
-    // Step 2: Get user profile
-    const {
-      id,
-      email,
-      verified_email,
-      given_name,
-      family_name,
-      picture,
-    } = await this.getGoogleUser(access_token);
+      // Step 2: Get user profile
+      const { id, email, verified_email, given_name, family_name, picture } =
+        await this.getGoogleUser(access_token);
 
-    if (!verified_email) {
-      throw new HttpException('Google account not verified', 400);
-    }
+      if (!verified_email) {
+        throw new HttpException('Google account not verified', 400);
+      }
 
-    // Step 3: Upsert user
-    let user: User | null = await this.prisma.user.findUnique({ where: { email } });
-
-    // console.log("Google OAuth user info:", { id, email, given_name, family_name });
-   
-    if (!user) {
-      user = await this.prisma.user.create({
-        data: {
-          email,
-          firstname: given_name,
-          lastname: family_name,
-          avatarUrl: picture,
-          verified: true,
-          credential: {
-            create: { googleId: id },
-          },
-        },
+      // Step 3: Upsert user
+      let user: User | null = await this.prisma.user.findUnique({
+        where: { email },
       });
-    }
 
-  const tokens = issueToken(user, this.jwtService, this.configService, res);
+      // console.log("Google OAuth user info:", { id, email, given_name, family_name });
 
-  // Append tokens to redirect URL so the frontend can pick them up after OAuth
-  const clientUrl = this.configService.get('CLIENT_URL') || 'http://localhost:3000';
-  const url = new URL('/auth/social-callback', clientUrl);
-  if (tokens?.accessToken) url.searchParams.set('accessToken', tokens.accessToken);
-  if (tokens?.refreshToken) url.searchParams.set('refreshToken', tokens.refreshToken);
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            email,
+            firstname: given_name,
+            lastname: family_name,
+            avatarUrl: picture,
+            verified: true,
+            credential: {
+              create: { googleId: id },
+            },
+          },
+        });
+      }
 
-  res.redirect(url.toString());
+      await issueToken(
+        user,
+        this.jwtService,
+        this.configService,
+        res,
+        this.prisma,
+      );
+
+      // Redirect to frontend callback without exposing tokens in the URL
+      const clientUrl =
+        this.configService.get('CLIENT_URL') || 'http://localhost:3000';
+      const url = new URL('/auth/social-callback', clientUrl);
+
+      res.redirect(url.toString());
     } catch (error) {
-      console.log("Error Google OAuth: ", error)
-         if(error instanceof HttpException) {
-                throw error;
-              }
-        throw new InternalServerErrorException("Internal Server Error")
+      console.log('Error Google OAuth: ', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Internal Server Error');
     }
   }
 
   private async getGoogleOAuthTokens(code: string): Promise<any> {
     try {
-
-
-//       console.log("Token exchange request:", {
-//   code,
-//   client_id: this.configService.get('GOOGLE_CLIENT_ID'),
-//   redirect_uri: this.configService.get('GOOGLE_REDIRECT_URL'),
-// });
-
+      //       console.log("Token exchange request:", {
+      //   code,
+      //   client_id: this.configService.get('GOOGLE_CLIENT_ID'),
+      //   redirect_uri: this.configService.get('GOOGLE_REDIRECT_URL'),
+      // });
 
       const url = 'https://oauth2.googleapis.com/token';
       const values = {
@@ -109,7 +106,10 @@ export class GoogleOAuthHandler implements ICommandHandler<GoogleOAuthCommand> {
 
       return response.data;
     } catch (error) {
-      console.error("Google token exchange error:", error.response?.data || error.message);
+      console.error(
+        'Google token exchange error:',
+        error.response?.data || error.message,
+      );
       throw new HttpException('Failed to fetch Google OAuth tokens', 400);
     }
   }
@@ -125,7 +125,7 @@ export class GoogleOAuthHandler implements ICommandHandler<GoogleOAuthCommand> {
 
       return response.data;
     } catch (error) {
-      console.log("Error: ", error.message, error)
+      console.log('Error: ', error.message, error);
       throw new HttpException('Failed to fetch Google user', 400);
     }
   }

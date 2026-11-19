@@ -15,14 +15,15 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Shield, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Save, Shield, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useUserStore } from "@/store/userStore";
 import ImageUpload from "@/components/custom/ImageUpload";
 import InputField from "@/components/shared/InputField";
 import { useMutation } from "@apollo/client/react";
 import { UPDATE_PROFILE } from "@/graphql/mutations/user/UpdateProfile";
 import { UpdateProfileMutation } from "@/gql/graphql";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
+import Link from "next/link";
 
 export default function ProfileUpdatePage() {
   const { user, setUser } = useUserStore();
@@ -82,44 +83,53 @@ export default function ProfileUpdatePage() {
   };
 
   return (
-    <div className="min-h-screen flex-1 overflow-y-scroll bg-gray-900 text-gray-100">
-      <div className="container max-w-4xl mx-auto py-8 px-4">
+    <div className="min-h-screen flex-1 overflow-y-auto bg-background text-foreground">
+      <div className="container max-w-3xl mx-auto py-8 px-4 pb-24">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          {/* <Button variant="ghost" size="icon" className="h-10 w-10 text-gray-200 hover:text-white">
-            <ArrowLeft className="h-5 w-5" />
-          </Button> */}
+          <Link href={user ? `/profile/${user.id}` : "/"}>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl border-border/80 text-muted-foreground hover:text-foreground"
+              aria-label="Back to profile"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-100">
-              Profile Settings
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Account Settings
             </h1>
-            <p className="text-gray-400">
-              Manage your account settings and preferences
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Manage your personal profile, details and security preferences
             </p>
           </div>
         </div>
 
-        <div className="grid gap-8">
+        <div className="grid gap-6">
           {/* Profile Image Section */}
-          <Card className="bg-gray-900 border border-gray-800 text-gray-100">
-            <CardHeader>
-              <CardTitle>Profile Picture</CardTitle>
-              <CardDescription>
-                Upload a profile picture to personalize your account
+          <Card className="bg-card/85 border border-border/80 text-foreground rounded-2xl shadow-xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold text-foreground">Profile Avatar</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Upload a recognizable photo or avatar for your account
               </CardDescription>
             </CardHeader>
-            <ImageUpload formData={formData} setFormData={setFormData} />
+            <CardContent>
+              <ImageUpload formData={formData} setFormData={setFormData} />
+            </CardContent>
           </Card>
 
           {/* Personal Information */}
-          <Card className="bg-gray-900 border border-gray-800 text-gray-100">
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>
-                Update your personal details and contact information
+          <Card className="bg-card/85 border border-border/80 text-foreground rounded-2xl shadow-xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold text-foreground">Personal Information</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Your name and personal bio displayed to other members
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   name="firstName"
@@ -150,56 +160,62 @@ export default function ProfileUpdatePage() {
                 onChange={(e) => handleInputChange("email", e.target.value)}
               />
 
-              <div className="space-y-2">
-                <Label htmlFor="bio" className="text-gray-200">Bio</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="bio" className="text-xs font-medium text-foreground/85">
+                  About You (Bio)
+                </Label>
                 <Textarea
                   id="bio"
                   value={formData.bio}
                   onChange={(e) => handleInputChange("bio", e.target.value)}
-                  placeholder="Tell us about yourself..."
-                  className="min-h-[100px] resize-none bg-gray-800 border border-gray-700 text-gray-100 placeholder:text-gray-400"
+                  placeholder="Tell the community about yourself, your projects, or passions..."
+                  className="min-h-[100px] resize-none bg-secondary/40 border-border/70 text-foreground placeholder:text-muted-foreground/60 text-sm rounded-xl focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/30"
+                  maxLength={500}
                 />
-                <p className="text-xs text-gray-400">
-                  {formData.bio.length}/500 characters
+                <p className="text-[11px] text-muted-foreground text-right font-mono">
+                  {formData.bio.length}/500
                 </p>
               </div>
             </CardContent>
           </Card>
 
           {/* Privacy & Security */}
-          <Card className="bg-gray-900 border border-gray-800 text-gray-100">
-            <CardHeader>
-              <CardTitle>Privacy & Security</CardTitle>
-              <CardDescription>
-                Control your privacy settings and account security
+          <Card className="bg-card/85 border border-border/80 text-foreground rounded-2xl shadow-xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold text-foreground">Privacy & Visibility</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Control who can view your profile and activities
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-5">
               {/* Profile Status */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="profile-status" className="text-gray-200">Profile Status</Label>
+                    <Label htmlFor="profile-status" className="text-sm font-semibold text-foreground">
+                      Profile Privacy
+                    </Label>
                     <Badge
                       variant={formData.isPrivate ? "secondary" : "default"}
+                      className="text-[10px] h-5"
                     >
                       {formData.isPrivate ? (
-                        <>
-                          <Eye className="h-3 w-3 mr-1" />
+                        <span className="flex items-center gap-1">
+                          <EyeOff className="h-3 w-3" />
                           Private
-                        </>
+                        </span>
                       ) : (
-                        <>
-                          <EyeOff className="h-3 w-3 mr-1" />
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
                           Public
-                        </>
+                        </span>
                       )}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     {formData.isPrivate
-                      ? "Your profile is only visible to you"
-                      : "Your profile is visible to everyone"}
+                      ? "Only confirmed connections can see your posts and updates."
+                      : "Anyone on SocialHub can explore your posts and profile."}
                   </p>
                 </div>
                 <Switch
@@ -211,52 +227,62 @@ export default function ProfileUpdatePage() {
                 />
               </div>
 
-              <Separator />
+              <Separator className="bg-border/60" />
 
               {/* Two Factor Authentication */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4 opacity-60">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="two-factor" className="text-gray-200">
-                      Two-Factor Authentication
+                    <Label htmlFor="two-factor" className="text-sm font-semibold text-foreground">
+                      Two-Factor Authentication (2FA)
                     </Label>
                     <Badge
-                      variant={
-                        formData.twoFactorEnabled ? "default" : "outline"
-                      }
-                      className="text-white"
+                      variant="outline"
+                      className="text-[10px] h-5 text-muted-foreground border-border/80"
                     >
                       <Shield className="h-3 w-3 mr-1" />
-                      {formData.twoFactorEnabled ? "Enabled" : "Disabled"}
+                      Coming Soon
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-400">
-                    Add an extra layer of security to your account
+                  <p className="text-xs text-muted-foreground">
+                    Additional security via authenticator app will be available soon.
                   </p>
                 </div>
                 <Switch
                   id="two-factor"
-                  checked={formData.twoFactorEnabled}
-                  onCheckedChange={(checked) =>
-                    handleInputChange("twoFactorEnabled", checked)
-                  }
+                  checked={false}
+                  disabled={true}
                 />
               </div>
             </CardContent>
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-end">
-            <Button variant="outline" className="sm:w-auto text-black border border-gray-700">
-              Cancel
-            </Button>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Link href={user ? `/profile/${user.id}` : "/"}>
+              <Button
+                variant="outline"
+                className="rounded-xl h-10 px-5 text-xs font-semibold border-border/80"
+              >
+                Cancel
+              </Button>
+            </Link>
             <Button
               onClick={handleSave}
               disabled={loading}
-              className="sm:w-auto bg-gray-100 text-gray-900 hover:bg-gray-200"
+              className="rounded-xl h-10 px-6 bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 text-xs"
             >
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? "Saving..." : "Save Changes"}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Save className="h-4 w-4" />
+                  Save Changes
+                </span>
+              )}
             </Button>
           </div>
         </div>

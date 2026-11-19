@@ -1,8 +1,14 @@
+"use client";
+import React from "react";
 import { FaGithub } from "react-icons/fa";
 
 const handleGitHubOAuth = () => {
-  console.log('GitHub OAuth initiated', process.env.NEXT_PUBLIC_API_BASE_URL+ '/auth/github');
-  window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/github`;
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    (process.env.NEXT_PUBLIC_API_URL
+      ? process.env.NEXT_PUBLIC_API_URL.replace(/\/graphql\/?$/, "")
+      : "http://localhost:5000");
+  window.location.href = `${apiBase}/auth/github`;
 };
 
 function GitHubOAuth() {
@@ -10,13 +16,10 @@ function GitHubOAuth() {
     <button
       type="button"
       onClick={handleGitHubOAuth}
-      className="flex w-full h-15 items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:border-slate-300/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+      className="flex w-full h-10 items-center justify-center gap-2 rounded-xl border border-border/80 bg-secondary/40 hover:bg-secondary text-foreground text-xs font-semibold transition-all duration-150 cursor-pointer shadow-xs"
     >
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm text-slate-900">
-        <FaGithub size={22} />
-      </span>
-      <span className="hidden sm:inline">GitHub</span>
-      <span className="sm:hidden">GitHub</span>
+      <FaGithub size={18} className="text-foreground" />
+      <span>GitHub</span>
     </button>
   );
 }

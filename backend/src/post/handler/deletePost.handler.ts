@@ -38,7 +38,10 @@ export class DeletePostHandler implements ICommandHandler<DeletePostCommand> {
       });
 
       // Fire and forget event
-      this.eventEmitter.emit('post.deleted', new PostDeletedEvent(postId, userId));
+      this.eventEmitter.emit(
+        'post.deleted',
+        new PostDeletedEvent(postId, userId),
+      );
 
       return 'Post deleted Successfully';
     } catch (error) {

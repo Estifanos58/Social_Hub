@@ -300,9 +300,9 @@ export default function MessagePage({ params }: PageProps) {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-gray-900 text-white">
-      <div className="flex flex-1 flex-col overflow-hidden border border-white/10 bg-gray-900 shadow-2xl">
-        <div className="sticky top-0 z-20 border-b border-white/10 bg-gray-900/95 backdrop-blur">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
+      <div className="flex flex-1 flex-col overflow-hidden bg-background">
+        <div className="sticky top-0 z-20 border-b border-border/70 bg-card/75 backdrop-blur-md">
           {loading ? (
             <ChatHeaderSkeleton />
           ) : headerProps ? (
@@ -312,19 +312,16 @@ export default function MessagePage({ params }: PageProps) {
             />
           ) : null}
         </div>
-        <div ref={scrollContainerRef} className="flex flex-1  scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 overflow-y-scroll  flex-col">
-          <div
-            
-            className="flex-1 px-6 py-8 "
-          >
+        <div ref={scrollContainerRef} className="flex flex-1 overflow-y-auto flex-col">
+          <div className="flex-1 px-4 md:px-8 py-6">
             {loading && <MessagesSkeleton />}
             {!loading && error && (
-              <div className="flex h-full items-center justify-center text-center text-sm text-red-400">
+              <div className="flex h-full items-center justify-center text-center text-xs text-destructive">
                 Failed to load messages. Please try again later.
               </div>
             )}
             {!loading && !error && (sortedMessages.length > 0 || pendingMessage) && (
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-3">
                 {sortedMessages.map((message) => (
                   <MessageBubble
                     key={message.id}
@@ -346,42 +343,44 @@ export default function MessagePage({ params }: PageProps) {
               <EmptyState />
             )}
             {typingUsers.length > 0 && (
-              <div className="mt-2 text-sm text-white">
-                {typingUsers.map((u) => u.firstname).join(", ")} {" "}
-                {typingUsers.length === 1 ? "is" : "are"} typing...
+              <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+                <span className="flex gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
+                </span>
+                <span>
+                  {typingUsers.map((u) => u.firstname).join(", ")}{" "}
+                  {typingUsers.length === 1 ? "is" : "are"} typing...
+                </span>
               </div>
             )}
             <div className="h-4" />
           </div>
-          <div className="sticky bottom-10 md:bottom-0 z-20 border-t border-white/10 bg-gray-900/95 px-4 py-4 backdrop-blur sm:px-6">
+          <div className="sticky bottom-0 z-20 border-t border-border/70 bg-card/85 backdrop-blur-md px-4 py-3 sm:px-6">
             {selectedImage && (
-              <div className="mb-3 flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="mb-3 flex items-center justify-between gap-4 rounded-xl border border-border/70 bg-secondary/50 p-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-16 w-16 overflow-hidden rounded-lg border border-white/10 bg-black/60">
+                  <div className="h-16 w-16 overflow-hidden rounded-lg border border-border bg-black/60">
                     <img
                       src={selectedImage.preview}
                       alt="Selected attachment"
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  {/* <div className="text-sm text-white/70">
-                    {isUploading && uploadProgress !== null
-                      ? `Uploading… ${uploadProgress}%`
-                      : "Ready to send"}
-                  </div> */}
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={clearSelectedImage}
                   aria-label="Remove image"
-                  className="text-white/70 hover:text-white"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             )}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="relative flex items-center flex-1">
                 <Textarea
                   ref={textareaRef}
@@ -403,14 +402,14 @@ export default function MessagePage({ params }: PageProps) {
                   }}
                   placeholder="Write a message…"
                   rows={1}
-                  className="min-h-0 resize-none bg-white/5 text-sm text-white placeholder:text-white/40"
+                  className="min-h-[42px] max-h-32 resize-none bg-secondary/40 border-border/70 text-foreground placeholder:text-muted-foreground/60 text-sm rounded-xl py-2.5 pl-3.5 pr-20 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
-                <div className="right-2 flex items-center gap-1.5">
+                <div className="absolute right-2 flex items-center gap-1">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="text-white/70"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
                     onClick={openFilePicker}
                     disabled={isSending}
                     aria-label="Attach image"
@@ -422,7 +421,7 @@ export default function MessagePage({ params }: PageProps) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="text-white/70"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
                       onClick={toggleEmojiPicker}
                       aria-label="Add emoji"
                       aria-expanded={showEmojiPicker}
@@ -431,12 +430,12 @@ export default function MessagePage({ params }: PageProps) {
                     </Button>
                     {showEmojiPicker && (
                       <div
-                        className="absolute bottom-full right-0 z-50 mb-3 w-64 max-w-xs overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900/95 p-3 shadow-2xl backdrop-blur sm:w-72"
+                        className="absolute bottom-full right-0 z-50 mb-3 w-64 max-w-xs overflow-y-auto rounded-2xl border border-border bg-card p-3 shadow-2xl backdrop-blur sm:w-72"
                         style={{ maxHeight: "60vh" }}
                         data-theme="dark"
                       >
                         <EmojiPicker
-                          className="border-0 bg-transparent text-white"
+                          className="border-0 bg-transparent text-foreground"
                           emojiSize={24}
                           emojisPerRow={8}
                           onEmojiSelect={handleEmojiSelect}
@@ -444,7 +443,7 @@ export default function MessagePage({ params }: PageProps) {
                           <EmojiPicker.Header className="pb-2">
                             <EmojiPicker.Input
                               placeholder="Search emoji"
-                              className="w-full rounded-md border border-white/10 bg-white/10 px-2 py-1 text-xs text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                              className="w-full rounded-md border border-border bg-secondary px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                             />
                           </EmojiPicker.Header>
                           <EmojiPicker.Group>
@@ -466,13 +465,13 @@ export default function MessagePage({ params }: PageProps) {
                 }}
                 disabled={!canSend}
                 size="icon"
-                className="h-12 w-12 rounded-full bg-emerald-500/80 text-white hover:bg-emerald-400/90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/25 hover:bg-primary/90 disabled:opacity-50"
                 aria-label="Send message"
               >
                 {isSending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4" />
                 )}
               </Button>
             </div>
@@ -484,8 +483,8 @@ export default function MessagePage({ params }: PageProps) {
               onChange={handleFileChange}
             />
             {uploadProgress !== null && isUploading && (
-              <p className="mt-2 text-xs text-white/60">
-                Uploading image… {uploadProgress}%
+              <p className="mt-2 text-xs text-muted-foreground font-mono">
+                Uploading attachment… {uploadProgress}%
               </p>
             )}
           </div>

@@ -4,13 +4,13 @@ import type React from "react";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Smile } from "lucide-react";
+import { Smile, Send, Loader2 } from "lucide-react";
 import { EmojiPicker } from "@ferrucc-io/emoji-picker";
 import { CreatedComment, useCommentSection } from "@/hooks/comment/useCommentSection";
 
 interface CommentSectionProps {
   postId: string;
-  parentId?: string; // for replies
+  parentId?: string;
   onCreated?: (comment: CreatedComment) => void;
   autoFocus?: boolean;
   placeholder?: string;
@@ -22,7 +22,7 @@ export const CommentSection = ({
   parentId,
   onCreated,
   autoFocus = false,
-  placeholder = "Write a comment...",
+  placeholder = "Write a thoughtful comment...",
   compact = false,
 }: CommentSectionProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -39,26 +39,26 @@ export const CommentSection = ({
     handleKeyDown,
   } = useCommentSection({ postId, parentId, onCreated });
 
-  // Auto-resize textarea helper
   const adjustTextareaHeight = () => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    // Limit max height to avoid huge expansion
-    const max = 220;
+    const max = 180;
     const newHeight = Math.min(el.scrollHeight, max);
     el.style.height = newHeight + "px";
   };
 
   return (
-    <div className={
-      (compact
-        ? "mt-2 rounded-lg border border-gray-800 bg-gray-900 p-3"
-        : "mt-4 rounded-xl border border-gray-800 bg-gray-900 p-3 md:p-4") +
-      " text-gray-200 shadow-inner shadow-black/30 transition-colors"
-    }>
+    <div
+      className={
+        (compact
+          ? "mt-2 rounded-xl border border-border/60 bg-secondary/30 p-2.5"
+          : "mt-4 rounded-xl border border-border/70 bg-secondary/40 p-3.5") +
+        " text-foreground transition-all duration-150"
+      }
+    >
       <div className="relative">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex-1 relative group">
             <Textarea
               ref={textareaRef}
@@ -70,49 +70,52 @@ export const CommentSection = ({
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               autoFocus={autoFocus}
-              className={(compact ? "min-h-[40px] text-sm" : "min-h-[48px] text-base md:text-lg") + "max-h-[140px] leading-relaxed resize-none pr-12 bg-gray-900 border border-gray-700 hover:border-gray-500 focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/30 placeholder:text-gray-500 rounded-lg shadow-sm focus:shadow-md transition-all duration-200 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-600"}
-              rows={2}
+              className={
+                (compact ? "min-h-[38px] text-xs py-2" : "min-h-[44px] text-sm py-2.5") +
+                " leading-relaxed resize-none pr-10 bg-card/60 border border-border/60 hover:border-border focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/60 rounded-lg transition-all duration-150"
+              }
+              rows={1}
               style={{ overflowY: "auto" }}
             />
-            <div className="absolute right-2 bottom-2 flex items-center gap-1">
+            <div className="absolute right-2 bottom-1.5 flex items-center">
               <div className="relative" ref={emojiPickerRef}>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowEmojiPicker((v) => !v)}
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-amber-400 hover:bg-gray-700/60 rounded-md transition-colors"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
                   aria-label="Add emoji"
                   aria-haspopup="dialog"
                   aria-expanded={showEmojiPicker}
                 >
-                  <Smile className="h-4 w-4 transition-transform group-focus-within:scale-110" />
+                  <Smile className="h-4 w-4" />
                 </Button>
                 {showEmojiPicker && (
                   <div
-                    className="absolute bottom-full right-0 mb-2 z-50 w-80 origin-bottom-right rounded-xl border border-gray-700 bg-gray-900 shadow-xl ring-1 ring-black/50 backdrop-blur-md p-2 animate-[fadeIn_120ms_ease-out]"
+                    className="absolute bottom-full right-0 mb-2 z-50 w-76 origin-bottom-right rounded-2xl border border-border bg-card shadow-2xl p-2 backdrop-blur-md animate-[fadeIn_120ms_ease-out]"
                     data-theme="dark"
                     role="dialog"
                     aria-label="Emoji picker"
                   >
-                    <div className="max-h-80 overflow-y-auto pr-1 custom-scrollbar scrollbar-thin scrollbar-thumb-gray-700/70 scrollbar-track-transparent">
+                    <div className="max-h-72 overflow-y-auto pr-1">
                       <EmojiPicker
-                        className="border border-gray-700 bg-gray-900 dark:border-zinc-800 rounded-lg"
-                        emojisPerRow={12}
-                        emojiSize={28}
+                        className="border border-border/60 bg-card rounded-xl text-foreground"
+                        emojisPerRow={10}
+                        emojiSize={26}
                         onEmojiSelect={handleEmojiSelect}
                       >
-                        <EmojiPicker.Header className="p-2 pb-0">
+                        <EmojiPicker.Header className="p-1 pb-1.5">
                           <EmojiPicker.Input
-                            placeholder="Search emoji"
+                            placeholder="Search emoji..."
                             autoFocus={true}
-                            className="rounded-md bg-gray-900 placeholder:text-gray-500 text-sm focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 border border-gray-700 w-full px-2 py-1 transition"
+                            className="rounded-lg bg-secondary placeholder:text-muted-foreground text-xs focus:ring-2 focus:ring-primary/40 focus:border-primary border border-border w-full px-2.5 py-1.5 text-foreground transition"
                           />
                         </EmojiPicker.Header>
                         <EmojiPicker.Group>
                           <EmojiPicker.List
                             hideStickyHeader={true}
-                            containerHeight={400}
+                            containerHeight={300}
                           />
                         </EmojiPicker.Group>
                       </EmojiPicker>
@@ -126,15 +129,23 @@ export const CommentSection = ({
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className={(compact ? "bg-gray-900 h-9 px-3 text-xs" : "bg-gray-900 h-10 px-4 text-xs md:h-full md:px-5 md:text-sm") + " hover:bg-gray-800 text-white shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed transition-all border border-gray-700"}
+              size="sm"
+              className="h-9 px-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-xs disabled:opacity-50 shrink-0"
             >
-              {isSubmitting ? "Posting..." : "Post"}
+              {isSubmitting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <span className="flex items-center gap-1">
+                  <Send className="h-3 w-3" />
+                  Post
+                </span>
+              )}
             </Button>
           )}
         </div>
         {comment.trim() && !compact && (
-          <div className="text-[10px] md:text-xs text-gray-400 mt-2 pl-0.5 select-none">
-            Press Cmd+Enter (Mac) or Ctrl+Enter (Windows) to post
+          <div className="text-[10px] text-muted-foreground mt-1.5 pl-1 select-none font-mono">
+            Press Cmd+Enter or Ctrl+Enter to publish
           </div>
         )}
       </div>

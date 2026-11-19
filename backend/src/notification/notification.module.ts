@@ -9,7 +9,13 @@ import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [CqrsModule],
-  providers: [NotificationService, PrismaService, JwtService, NotificationResolver, GetNotificationsHandler, GetUnreadCountHandler],
+  providers: [
+    NotificationService,
+    JwtService,
+    NotificationResolver,
+    GetNotificationsHandler,
+    GetUnreadCountHandler,
+  ],
   exports: [NotificationService],
 })
 export class NotificationModule {}

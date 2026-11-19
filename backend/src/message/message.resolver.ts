@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
   UnauthorizedException,
   UseGuards,
@@ -17,16 +18,21 @@ import {
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import { Request } from 'express';
 import { GraphQLAuthGuard } from 'src/common/guards/graphql-auth.guard';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { ChatroomDto, MessageDto, UserDto } from 'src/types';
 import { CreateChatroomCommand } from '../chatroom/commands/CreateChatroom.command';
 import { CreateMessageCommand } from './commands/CreateMessage.command';
 import { GetMessagesQuery } from './query/GetMessages.query';
 import { redisPubSub } from 'src/pubsub';
 
+type SubscriptionContext = {
+  pubSub?: RedisPubSub;
+  userId?: string;
+  user?: any;
+  req?: Request;
+};
 
-type SubscriptionContext = { pubSub?: RedisPubSub };
-type RequestContext = { req: Request; pubSub?: RedisPubSub };
+type RequestContext = { req: Request; pubSub?: RedisPubSub; userId?: string };
 
 @Resolver()
 export class MessageResolver {
@@ -34,14 +40,11 @@ export class MessageResolver {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly prismaService: PrismaService,
-  ) {
-  }
+  ) {}
 
-  
   private getPubSub(context?: SubscriptionContext) {
     return context?.pubSub ?? redisPubSub;
   }
-
 
   @UseGuards(GraphQLAuthGuard)
   @Query(() => [MessageDto])
@@ -68,39 +71,54 @@ export class MessageResolver {
     );
   }
 
-  // Subbscription For New Messages
+  // Subscription For New Messages
   @Subscription(() => MessageDto, {
     nullable: true,
     resolve: (value) => value.newMessage,
+    filter: async function (
+      this: MessageResolver,
+      payload,
+      variables,
+      context: SubscriptionContext,
+    ) {
+      const subscriberId = context?.userId ?? context?.req?.user?.sub;
+      if (!subscriberId) return false;
+      const targetRoomId =
+        variables?.chatroomId || payload?.newMessage?.chatroomId;
+      if (!targetRoomId) return false;
+
+      const isMember = await this.prismaService.chatroomUser.findUnique({
+        where: {
+          userId_chatroomId: {
+            userId: subscriberId,
+            chatroomId: targetRoomId,
+          },
+        },
+      });
+      return Boolean(isMember);
+    },
   })
   newMessage(
-  @Args('chatroomId') chatroomId?: string,
-  @Args('userId') userId?: string,
-  @Context() context?: SubscriptionContext,
+    @Args('chatroomId') chatroomId?: string,
+    @Args('userId', { nullable: true }) userId?: string,
+    @Context() context?: SubscriptionContext,
   ) {
     const pubSub = this.getPubSub(context);
-    // console.log("Subscription args:", { chatroomId, userId, otherUserId });
-
-    if (chatroomId) {
-      return pubSub.asyncIterableIterator(`newMessage.${chatroomId}`);
+    if (!chatroomId) {
+      throw new BadRequestException('chatroomId is required');
     }
 
-    // if (!otherUserId) {
-    //   throw new BadRequestException(
-    //     'otherUserId is required when chatroomId is not provided',
-    //   );
-    // }
-
+    return pubSub.asyncIterableIterator(`newMessage.${chatroomId}`);
   }
 
   @UseGuards(GraphQLAuthGuard)
   @Mutation(() => MessageDto)
   async createMessageMutation(
-  @Args('chatroomId', { nullable: true }) chatroomId: string,
-  @Args('otherUserId', { nullable: true }) otherUserId: string,
-  @Args('content', { nullable: true }) content: string,
-  @Args('imageUrl', { nullable: true }) imageUrl: string,
-  @Context() context: RequestContext,
+    @Args('chatroomId', { nullable: true }) chatroomId: string,
+    @Args('otherUserId', { nullable: true }) otherUserId: string,
+    @Args('content', { nullable: true }) content: string,
+    @Args('imageUrl', { nullable: true }) imageUrl: string,
+    @Context() context: RequestContext,
   ) {
     const userId = context.req.user?.sub;
     if (!userId) {
@@ -123,7 +141,13 @@ export class MessageResolver {
       }
 
       const createdChatroom = await this.commandBus.execute(
-        new CreateChatroomCommand(userId, otherUserId, false, undefined, undefined),
+        new CreateChatroomCommand(
+          userId,
+          otherUserId,
+          false,
+          undefined,
+          undefined,
+        ),
       );
 
       if (!createdChatroom) {
@@ -160,12 +184,28 @@ export class MessageResolver {
     return message;
   }
 
-
   @Subscription(() => UserDto, {
     nullable: true,
     resolve: (value) => value.user,
-    filter: (payload, variables) => {
-      return payload.typingUserId !== variables.userId;
+    filter: async function (
+      this: MessageResolver,
+      payload,
+      variables,
+      context: SubscriptionContext,
+    ) {
+      const subscriberId = context?.userId ?? context?.req?.user?.sub;
+      if (!subscriberId) return false;
+      if (payload.typingUserId === subscriberId) return false;
+
+      const isMember = await this.prismaService.chatroomUser.findUnique({
+        where: {
+          userId_chatroomId: {
+            userId: subscriberId,
+            chatroomId: variables.chatroomId,
+          },
+        },
+      });
+      return Boolean(isMember);
     },
   })
   userStartedTyping(
@@ -188,10 +228,24 @@ export class MessageResolver {
     if (!userId) {
       throw new UnauthorizedException('Unauthorized');
     }
+
+    const isMember = await this.prismaService.chatroomUser.findUnique({
+      where: {
+        userId_chatroomId: {
+          userId,
+          chatroomId,
+        },
+      },
+    });
+    if (!isMember) {
+      throw new ForbiddenException('You are not a member of this chatroom');
+    }
+
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
     if (!user) throw new NotFoundException('User not found');
+
     const pubSub = this.getPubSub(context);
     await pubSub.publish(`userStartedTyping.${chatroomId}`, {
       user,
@@ -200,13 +254,29 @@ export class MessageResolver {
     return user;
   }
 
-
   @Subscription(() => UserDto, {
     nullable: true,
     resolve: (value) => value.user,
-    filter: (payload, variables) => {
-      return payload.typingUserId !== variables.userId;
-    }
+    filter: async function (
+      this: MessageResolver,
+      payload,
+      variables,
+      context: SubscriptionContext,
+    ) {
+      const subscriberId = context?.userId ?? context?.req?.user?.sub;
+      if (!subscriberId) return false;
+      if (payload.typingUserId === subscriberId) return false;
+
+      const isMember = await this.prismaService.chatroomUser.findUnique({
+        where: {
+          userId_chatroomId: {
+            userId: subscriberId,
+            chatroomId: variables.chatroomId,
+          },
+        },
+      });
+      return Boolean(isMember);
+    },
   })
   userStoppedTyping(
     @Args('chatroomId') chatroomId: string,
@@ -223,22 +293,34 @@ export class MessageResolver {
   async userStoppedTypingMutation(
     @Args('chatroomId') chatroomId: string,
     @Context() context: RequestContext,
-    ) {
+  ) {
     const userId = context.req.user?.sub;
     if (!userId) {
       throw new UnauthorizedException('Unauthorized');
     }
+
+    const isMember = await this.prismaService.chatroomUser.findUnique({
+      where: {
+        userId_chatroomId: {
+          userId,
+          chatroomId,
+        },
+      },
+    });
+    if (!isMember) {
+      throw new ForbiddenException('You are not a member of this chatroom');
+    }
+
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
     if (!user) throw new NotFoundException('User not found');
+
     const pubSub = this.getPubSub(context);
     await pubSub.publish(`userStoppedTyping.${chatroomId}`, {
       user,
       typingUserId: userId,
     });
     return user;
-    }
-
-    
+  }
 }

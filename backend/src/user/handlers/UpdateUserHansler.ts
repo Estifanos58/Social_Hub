@@ -2,7 +2,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UpdateUserCommand } from '../commands/UpdateUserCommand';
 import { PrismaService } from 'src/prisma.service';
 import {
-    BadRequestException,
+  BadRequestException,
   HttpException,
   InternalServerErrorException,
   NotFoundException,
@@ -30,26 +30,34 @@ export class UpdateUserHandler implements ICommandHandler<UpdateUserCommand> {
 
       if (!user) throw new NotFoundException('User not found');
 
-      const updatedUser = await this.prismaService.$transaction(async (prisma) => {
-        if (twoFactorEnabled !== undefined) {
-          await prisma.credential.update({
-            where: { userId },
-            data: { twoFactorEnabled },
-          });
-        }
-        return await prisma.user.update({
-          where: { id: userId },
-          data: {
-            firstname: firstname ?? user.firstname,
-            lastname: lastname ?? user.lastname,
-            bio: bio ?? user.bio,
-            avatarUrl: avatarUrl ?? user.avatarUrl,
-            isPrivate: isPrivate ?? user.isPrivate,
-          },
-        });
-      });
+      if (twoFactorEnabled === true) {
+        throw new BadRequestException(
+          'Two-Factor Authentication is currently unavailable and will be supported in an upcoming release.',
+        );
+      }
 
-      if(!updatedUser) throw new BadRequestException('Failed to update user');
+      const updatedUser = await this.prismaService.$transaction(
+        async (prisma) => {
+          if (twoFactorEnabled !== undefined) {
+            await prisma.credential.updateMany({
+              where: { userId },
+              data: { twoFactorEnabled },
+            });
+          }
+          return await prisma.user.update({
+            where: { id: userId },
+            data: {
+              firstname: firstname ?? user.firstname,
+              lastname: lastname ?? user.lastname,
+              bio: bio ?? user.bio,
+              avatarUrl: avatarUrl ?? user.avatarUrl,
+              isPrivate: isPrivate ?? user.isPrivate,
+            },
+          });
+        },
+      );
+
+      if (!updatedUser) throw new BadRequestException('Failed to update user');
 
       return updatedUser;
     } catch (error) {

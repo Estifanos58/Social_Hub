@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.gitignore
+*.spec.ts
+*.test.ts
+.env*.local
+npm-debug.log*

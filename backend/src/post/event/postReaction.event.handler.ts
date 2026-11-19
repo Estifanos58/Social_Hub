@@ -11,6 +11,12 @@ export class PostReactionEventHandler {
   async handle(event: PostReactionEvent) {
     const { postId, reactorId, postOwnerId, reactionId, reactionType } = event;
     if (postOwnerId === reactorId) return;
-    await this.notifications.reactionOnPost(postOwnerId, reactorId, postId, reactionId, { reactionType });
+    await this.notifications.reactionOnPost(
+      postOwnerId,
+      reactorId,
+      postId,
+      reactionId,
+      { reactionType },
+    );
   }
 }

@@ -2,7 +2,11 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { JwtService } from '@nestjs/jwt';
 import { CommentResolver } from './comment.resolver';
-import { CreateCommentHandler, GetPostCommentsHandler, GetCommentRepliesHandler } from './handler';
+import {
+  CreateCommentHandler,
+  GetPostCommentsHandler,
+  GetCommentRepliesHandler,
+} from './handler';
 import { PrismaService } from 'src/prisma.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { CommentCreatedEventHandler } from './event/commentCreated.event.handler';
@@ -16,7 +20,6 @@ const QueryHandlers = [GetPostCommentsHandler, GetCommentRepliesHandler];
   providers: [
     CommentResolver,
     JwtService,
-    PrismaService,
     ...CommandHandlers,
     ...QueryHandlers,
     CommentCreatedEventHandler,

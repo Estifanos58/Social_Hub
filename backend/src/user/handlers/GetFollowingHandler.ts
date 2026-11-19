@@ -32,10 +32,10 @@ export class GetFollowingHandler implements IQueryHandler<GetFollowingQuery> {
       const hasMore = users.length > take;
 
       return new GetFollowersDto({
-        users: users.map((f) => (f.following)).slice(0, take),
+        users: users.map((f) => f.following).slice(0, take),
         totalFollowers,
         totalFollowing,
-        hasMore
+        hasMore,
       });
     } catch (error) {
       if (error instanceof HttpException) throw error;

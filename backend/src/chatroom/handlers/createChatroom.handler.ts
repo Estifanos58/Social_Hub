@@ -16,7 +16,8 @@ export class CreateChatroomHandler
   constructor(private readonly prismaService: PrismaService) {}
 
   async execute(command: CreateChatroomCommand) {
-  const { userId, otherUserId, isGroupChat, chatroomName, avatarUrl } = command;
+    const { userId, otherUserId, isGroupChat, chatroomName, avatarUrl } =
+      command;
 
     if (!userId) {
       throw new BadRequestException('userId is required');
@@ -39,7 +40,9 @@ export class CreateChatroomHandler
     }
 
     if (!isGroup && otherUserId === userId) {
-      throw new BadRequestException('Cannot create a direct chat with yourself');
+      throw new BadRequestException(
+        'Cannot create a direct chat with yourself',
+      );
     }
 
     if (otherUserId) {
@@ -52,27 +55,65 @@ export class CreateChatroomHandler
     }
 
     if (!isGroup && otherUserId) {
-      const existingChatroom = await this.prismaService.chatroom.findFirst({
-        where: {
-          isGroup: false,
-          deletedAt: null,
-          AND: [
-            { memberships: { some: { userId } } },
-            { memberships: { some: { userId: otherUserId } } },
-          ],
-        },
-        include: {
-          createdBy: true,
-          memberships: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      });
+      try {
+        return await this.prismaService.$transaction(async (tx) => {
+          // Serialize concurrent creation between the same two users
+          const [u1, u2] = [userId, otherUserId].sort();
+          try {
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`dm_${u1}_${u2}`}))`;
+          } catch {
+            // If raw query fails in non-postgres test environments, continue gracefully
+          }
 
-      if (existingChatroom) {
-        return existingChatroom;
+          const existingChatroom = await tx.chatroom.findFirst({
+            where: {
+              isGroup: false,
+              deletedAt: null,
+              AND: [
+                { memberships: { some: { userId } } },
+                { memberships: { some: { userId: otherUserId } } },
+              ],
+            },
+            include: {
+              createdBy: true,
+              memberships: {
+                include: {
+                  user: true,
+                },
+              },
+            },
+          });
+
+          if (existingChatroom) {
+            return existingChatroom;
+          }
+
+          return await tx.chatroom.create({
+            data: {
+              name: null,
+              isGroup: false,
+              createdById: userId,
+              avatarUrl: null,
+              memberships: {
+                create: [
+                  { userId, role: ChatroomRole.OWNER },
+                  { userId: otherUserId, role: ChatroomRole.MEMBER },
+                ],
+              },
+            },
+            include: {
+              createdBy: true,
+              memberships: {
+                include: { user: true },
+              },
+            },
+          });
+        });
+      } catch (error) {
+        if (error instanceof HttpException) throw error;
+        throw new InternalServerErrorException(
+          'Failed to create direct chatroom',
+        );
       }
     }
 

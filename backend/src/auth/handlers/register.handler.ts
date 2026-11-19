@@ -20,7 +20,7 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
   ) {}
   async execute(command: RegisterCommand): Promise<any> {
     const { email, password, firstname, lastname, res } = command;
@@ -41,18 +41,32 @@ export class RegisterHandler implements ICommandHandler<RegisterCommand> {
           email,
           firstname,
           lastname,
-          credential: { create: { passwordHash: hashedPassword, verificationToken, verificationTokenExpiry } },
+          credential: {
+            create: {
+              passwordHash: hashedPassword,
+              verificationToken,
+              verificationTokenExpiry,
+            },
+          },
         },
       });
 
-      this.eventEmitter.emit('verification.token', new VerificationTokenEvent(newUser, verificationToken));
+      this.eventEmitter.emit(
+        'verification.token',
+        new VerificationTokenEvent(newUser, verificationToken),
+      );
 
-      return issueToken(newUser, this.jwtService, this.configService, res);
+      return await issueToken(
+        newUser,
+        this.jwtService,
+        this.configService,
+        res,
+        this.prisma,
+      );
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
-      }
-      else {
+      } else {
         console.log('HTTP EXCEPTION', error);
         throw new InternalServerErrorException('Failed to register user');
       }

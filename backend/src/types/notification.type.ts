@@ -1,4 +1,10 @@
-import { Field, ObjectType, GraphQLISODateTime, registerEnumType, Int } from '@nestjs/graphql';
+import {
+  Field,
+  ObjectType,
+  GraphQLISODateTime,
+  registerEnumType,
+  Int,
+} from '@nestjs/graphql';
 import { UserDto, PostDto, CommentDto, ReactionDto } from '.';
 
 export enum GqlNotificationType {
@@ -23,16 +29,16 @@ export class NotificationDto {
   @Field()
   recipientId: string;
 
-  @Field(()=> String ,{ nullable: true })
+  @Field(() => String, { nullable: true })
   actorId?: string | null;
 
-  @Field(()=> String,{ nullable: true })
+  @Field(() => String, { nullable: true })
   postId?: string | null;
 
-  @Field(()=> String,{ nullable: true })
+  @Field(() => String, { nullable: true })
   commentId?: string | null;
 
-  @Field(()=> String,{ nullable: true })
+  @Field(() => String, { nullable: true })
   reactionId?: string | null;
 
   @Field()

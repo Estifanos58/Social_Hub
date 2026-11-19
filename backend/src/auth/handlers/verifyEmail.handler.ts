@@ -10,9 +10,9 @@ export class VerifyEmailHandler implements ICommandHandler<VerifiEmailCommand> {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly eventEmitter: EventEmitter2,
-) {}
+  ) {}
 
-  async execute(command: VerifiEmailCommand){
+  async execute(command: VerifiEmailCommand) {
     const { token, userId } = command;
 
     const user = await this.prismaService.user.findUnique({
@@ -44,7 +44,10 @@ export class VerifyEmailHandler implements ICommandHandler<VerifiEmailCommand> {
       },
     });
 
-    this.eventEmitter.emit('user.verified', new EmailConfirmedEvent(user.email));
+    this.eventEmitter.emit(
+      'user.verified',
+      new EmailConfirmedEvent(user.email),
+    );
 
     return user;
   }

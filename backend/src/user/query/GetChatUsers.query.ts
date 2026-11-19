@@ -1,5 +1,3 @@
 export class GetChatUsersQuery {
-    constructor(
-        public readonly userId: string
-    ){}
+  constructor(public readonly userId: string) {}
 }

@@ -59,7 +59,7 @@ interface AddMembersDialogProps {
 const FallbackStats = () => (
   <div className="grid gap-4 sm:grid-cols-2">
     {[1, 2, 3].map((key) => (
-      <div key={key} className="rounded-xl border border-white/10 bg-white/5 p-4">
+      <div key={key} className="rounded-xl border border-border/70 bg-secondary/30 p-4">
         <div className="h-4 w-24 animate-pulse rounded bg-white/20" />
         <div className="mt-3 h-6 w-32 animate-pulse rounded bg-white/30" />
       </div>
@@ -92,7 +92,7 @@ const DetailHeader = ({ detail, isLoading }: DetailHeaderProps) => {
 
   return (
     <div className="flex items-center gap-4">
-      <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+      <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-border/70 bg-secondary/30">
         <Image src={avatarUrl} alt={name} width={64} height={64} className="h-16 w-16 object-cover" />
       </div>
       <div>
@@ -144,10 +144,10 @@ export function ChatroomDetailModal({ open, onOpenChange, chatroomId, otherUserI
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[85vh] w-full max-w-xl overflow-hidden border border-white/10 bg-gray-900 text-white shadow-2xl">
+        <DialogContent className="max-h-[85vh] w-full max-w-xl overflow-hidden border border-border/80 bg-card/95 text-foreground shadow-2xl backdrop-blur-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Chatroom details</DialogTitle>
-          <DialogDescription className="text-white/60">
+          <DialogTitle className="text-lg font-bold tracking-tight text-foreground">Chatroom details</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
             Review information about this conversation.
           </DialogDescription>
         </DialogHeader>
@@ -163,7 +163,7 @@ export function ChatroomDetailModal({ open, onOpenChange, chatroomId, otherUserI
                 variant="outline"
                 onClick={() => setAddMembersOpen(true)}
                 disabled={!effectiveChatroomId}
-                className="inline-flex items-center gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10"
+                className="inline-flex items-center gap-2 border-border/70 bg-secondary/50 text-foreground hover:bg-secondary rounded-lg text-xs"
               >
                 <UserPlus className="h-4 w-4" />
                 Add members
@@ -172,7 +172,7 @@ export function ChatroomDetailModal({ open, onOpenChange, chatroomId, otherUserI
           )}
 
           {error && !loading && (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-xs text-destructive">
               Failed to load chatroom details.
               <Button
                 type="button"
@@ -181,7 +181,7 @@ export function ChatroomDetailModal({ open, onOpenChange, chatroomId, otherUserI
                 onClick={() => {
                   void refetch();
                 }}
-                className="ml-3 bg-white/5 text-white hover:bg-white/10"
+                className="ml-3 text-xs"
               >
                 Retry
               </Button>
@@ -206,7 +206,7 @@ export function ChatroomDetailModal({ open, onOpenChange, chatroomId, otherUserI
           )}
 
           {!showContent && !showSkeleton && !error && detail && !hasRemoteDetail && (
-            <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+            <p className="rounded-xl border border-border/70 bg-secondary/30 p-4 text-xs text-muted-foreground">
               We&apos;ll display more details once they&apos;re available for this chatroom.
             </p>
           )}
@@ -332,7 +332,7 @@ const AddMembersDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border border-white/10 bg-gray-900 text-white">
+      <DialogContent className="max-w-lg border border-border/80 bg-card/95 text-foreground backdrop-blur-md rounded-2xl shadow-2xl">
         <DialogHeader>
           <DialogTitle>Add members</DialogTitle>
           <DialogDescription className="text-white/60">
@@ -379,13 +379,13 @@ const AddMembersDialog = ({
             <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Results</p>
             <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
               {trimmedSearch.length === 0 && (
-                <p className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/60">
+                <p className="rounded-lg border border-border/70 bg-secondary/30 p-3 text-sm text-white/60">
                   Start typing to search for members.
                 </p>
               )}
 
               {trimmedSearch.length > 0 && searchResults.length === 0 && !searchLoading && (
-                <p className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/60">
+                <p className="rounded-lg border border-border/70 bg-secondary/30 p-3 text-sm text-white/60">
                   No users found.
                 </p>
               )}
@@ -434,9 +434,9 @@ const SearchResultRow = ({ user, onSelect }: { user: SearchUserResult; onSelect:
   <button
     type="button"
     onClick={onSelect}
-    className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-left transition hover:bg-white/10"
+    className="flex w-full items-center gap-3 rounded-xl border border-border/70 bg-secondary/30 p-3 text-left transition hover:bg-white/10"
   >
-    <div className="h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-white/10">
+    <div className="h-10 w-10 overflow-hidden rounded-full border border-border/70 bg-secondary/40">
       <Image
         src={user.avatarUrl || DEFAULT_AVATAR}
         alt={user.firstname ?? user.email}
@@ -456,9 +456,9 @@ const SearchResultRow = ({ user, onSelect }: { user: SearchUserResult; onSelect:
 );
 
 const SelectedUserChip = ({ user, onRemove }: { user: SearchUserResult; onRemove: () => void }) => (
-  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white">
+  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-secondary/30 px-3 py-1 text-sm text-white">
     <span className="flex items-center gap-2">
-      <span className="h-8 w-8 overflow-hidden rounded-full border border-white/10 bg-white/10">
+      <span className="h-8 w-8 overflow-hidden rounded-full border border-border/70 bg-secondary/40">
         <Image
           src={user.avatarUrl || DEFAULT_AVATAR}
           alt={user.firstname ?? user.email}
@@ -501,7 +501,7 @@ const GroupDetailSection = ({ detail, isLoading }: GroupSectionProps) => {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-white/70">Members</h3>
         {(!detail.members || detail.members.length === 0) && !isLoading && (
-          <p className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+          <p className="rounded-lg border border-border/70 bg-secondary/30 p-4 text-sm text-white/60">
             No members found.
           </p>
         )}
@@ -509,8 +509,8 @@ const GroupDetailSection = ({ detail, isLoading }: GroupSectionProps) => {
           <div className="flex flex-col gap-2">
             {detail.members.map((member) => (
               <Link href={`/profile/${member.userId}`} key={member.userId}>
-              <div  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                <div className="relative h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-white/10">
+              <div  className="flex items-center gap-3 rounded-xl border border-border/70 bg-secondary/30 p-3">
+                <div className="relative h-10 w-10 overflow-hidden rounded-full border border-border/70 bg-secondary/40">
                   <Image
                     src={member.avatarUrl || DEFAULT_AVATAR}
                     alt={member.firstname ?? "Member avatar"}
@@ -562,9 +562,9 @@ const DirectDetailSection = ({ detail, isLoading }: DirectSectionProps) => {
 
       {directUser ? (
         <Link href={`/profile/${directUser.id}`}>
-        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="space-y-4 rounded-2xl border border-border/70 bg-secondary/30 p-5">
           <div className="flex items-center gap-4">
-            <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-white/10 bg-white/10">
+            <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-border/70 bg-secondary/40">
               <Image
                 src={directUser.avatarUrl || DEFAULT_AVATAR}
                 alt={directUser.firstname ?? "User avatar"}
@@ -592,7 +592,7 @@ const DirectDetailSection = ({ detail, isLoading }: DirectSectionProps) => {
 
       ) : (
         !isLoading && (
-          <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+          <p className="rounded-xl border border-border/70 bg-secondary/30 p-4 text-sm text-white/60">
             We couldn&apos;t load the other user details.
           </p>
         )
@@ -613,7 +613,7 @@ interface StatsGridProps {
 const StatsGrid = ({ stats }: StatsGridProps) => (
   <div className="grid gap-4 sm:grid-cols-2">
     {stats.map((stat) => (
-      <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div key={stat.label} className="rounded-2xl border border-border/70 bg-secondary/30 p-4">
         <p className="text-xs uppercase tracking-wide text-white/50">{stat.label}</p>
         <p className="mt-2 text-2xl font-semibold text-white">{stat.value}</p>
       </div>

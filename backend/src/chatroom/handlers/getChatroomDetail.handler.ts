@@ -1,11 +1,22 @@
-import { BadRequestException, HttpException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from 'src/prisma.service';
-import { ChatroomDetailDto, ChatroomMemberDetailDto, ChatroomDirectUserDto } from 'src/types';
+import {
+  ChatroomDetailDto,
+  ChatroomMemberDetailDto,
+  ChatroomDirectUserDto,
+} from 'src/types';
 import { GetChatroomDetailQuery } from '../query/GetChatroomDetail.query';
 
 @QueryHandler(GetChatroomDetailQuery)
-export class GetChatroomDetailHandler implements IQueryHandler<GetChatroomDetailQuery> {
+export class GetChatroomDetailHandler
+  implements IQueryHandler<GetChatroomDetailQuery>
+{
   constructor(private readonly prismaService: PrismaService) {}
 
   async execute(query: GetChatroomDetailQuery): Promise<ChatroomDetailDto> {
@@ -30,8 +41,12 @@ export class GetChatroomDetailHandler implements IQueryHandler<GetChatroomDetail
         }
 
         const [totalFollowers, totalFollowing] = await Promise.all([
-          this.prismaService.follower.count({ where: { followingId: directUser.id } }),
-          this.prismaService.follower.count({ where: { followerId: directUser.id } }),
+          this.prismaService.follower.count({
+            where: { followingId: directUser.id },
+          }),
+          this.prismaService.follower.count({
+            where: { followerId: directUser.id },
+          }),
         ]);
 
         const detail: ChatroomDetailDto = {
@@ -115,24 +130,32 @@ export class GetChatroomDetailHandler implements IQueryHandler<GetChatroomDetail
       };
 
       if (chatroom.isGroup) {
-        const members: ChatroomMemberDetailDto[] = chatroom.memberships.map((membership) => ({
-          id: membership.id,
-          userId: membership.userId,
-          firstname: membership.user?.firstname ?? null,
-          lastname: membership.user?.lastname ?? null,
-          avatarUrl: membership.user?.avatarUrl ?? null,
-          isOwner: membership.userId === chatroom.createdById,
-        }));
+        const members: ChatroomMemberDetailDto[] = chatroom.memberships.map(
+          (membership) => ({
+            id: membership.id,
+            userId: membership.userId,
+            firstname: membership.user?.firstname ?? null,
+            lastname: membership.user?.lastname ?? null,
+            avatarUrl: membership.user?.avatarUrl ?? null,
+            isOwner: membership.userId === chatroom.createdById,
+          }),
+        );
 
         detail.totalMembers = members.length;
         detail.members = members;
       } else {
-        const otherMembership = chatroom.memberships.find((membership) => membership.userId !== userId);
+        const otherMembership = chatroom.memberships.find(
+          (membership) => membership.userId !== userId,
+        );
 
         if (otherMembership?.user) {
           const [totalFollowers, totalFollowing] = await Promise.all([
-            this.prismaService.follower.count({ where: { followingId: otherMembership.user.id } }),
-            this.prismaService.follower.count({ where: { followerId: otherMembership.user.id } }),
+            this.prismaService.follower.count({
+              where: { followingId: otherMembership.user.id },
+            }),
+            this.prismaService.follower.count({
+              where: { followerId: otherMembership.user.id },
+            }),
           ]);
 
           const directUser: ChatroomDirectUserDto = {

@@ -9,8 +9,20 @@ export class ReplyCreatedEventHandler {
 
   @OnEvent('comment.replyCreated')
   async handle(event: ReplyCreatedEvent) {
-    const { parentCommentId, replyCommentId, parentOwnerId, replierId, excerpt } = event;
+    const {
+      parentCommentId,
+      replyCommentId,
+      parentOwnerId,
+      replierId,
+      excerpt,
+    } = event;
     if (parentOwnerId === replierId) return; // avoid self-notify
-    await this.notifications.replyOnComment(parentOwnerId, replierId, parentCommentId, replyCommentId, { excerpt });
+    await this.notifications.replyOnComment(
+      parentOwnerId,
+      replierId,
+      parentCommentId,
+      replyCommentId,
+      { excerpt },
+    );
   }
 }

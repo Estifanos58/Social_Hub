@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ChangeEvent, ReactNode, Ref } from "react";
-import { IoSearchOutline } from "react-icons/io5";
+import { Search } from "lucide-react";
 import Image from "next/image";
 import { useQuery } from "@apollo/client/react";
 import { SEARCH_USERS } from "@/graphql/queries/user/searchUsers";
@@ -26,8 +26,8 @@ interface SearchUsersQueryData {
       id: string;
       firstname: string;
       lastname: string | null;
-  bio: string | null;
-  email: string;
+      bio: string | null;
+      email: string;
       avatarUrl: string | null;
     }>;
   };
@@ -43,20 +43,20 @@ interface SearchUsersQueryVariables {
 
 export function MessageSkeletonList({ count = 5 }: { count?: number }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {Array.from({ length: count }).map((_, index) => (
         <div
           key={index}
-          className="flex items-center justify-between p-3 rounded-lg bg-gray-900/40 animate-pulse"
+          className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/30 animate-pulse"
         >
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gray-700" />
-            <div className="space-y-2">
-              <div className="w-28 h-3 rounded bg-gray-700" />
-              <div className="w-20 h-3 rounded bg-gray-800" />
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <div className="w-9 h-9 rounded-full bg-muted/40 shrink-0" />
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <div className="w-24 h-3 rounded bg-muted/40" />
+              <div className="w-16 h-2.5 rounded bg-muted/30" />
             </div>
           </div>
-          <div className="w-16 h-6 rounded-full bg-gray-800" />
+          <div className="w-12 h-5 rounded-full bg-muted/30 shrink-0" />
         </div>
       ))}
     </div>
@@ -66,12 +66,12 @@ export function MessageSkeletonList({ count = 5 }: { count?: number }) {
 function Searching({
   defaultContent,
   scrollRef,
-  placeholder = "Search people",
+  placeholder = "Search messages...",
   limit = 10,
 }: SearchingProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 400);
-  const router = useRouter()
+  const router = useRouter();
   const setSelectedChatRoomId = userMessageStore((state) => state.setSelectedChatRoomId);
   const setSelectedChatroomMeta = userMessageStore((state) => state.setSelectedChatroomMeta);
 
@@ -99,8 +99,6 @@ function Searching({
     setSearchTerm(event.target.value);
   };
 
-
-
   const handleMessageRoute = (user: SearchUsersQueryData["SearchUsers"]["users"][number]) => {
     setSelectedChatRoomId(null);
     setSelectedChatroomMeta({
@@ -108,70 +106,68 @@ function Searching({
       isGroup: false,
       name: user.firstname,
       avatarUrl: user.avatarUrl ?? DEFAULT_AVATAR,
-  subtitle: user.bio ?? "",
+      subtitle: user.bio ?? "",
     });
-    router.replace(`/message/${user.id}`)
-  }
+    router.replace(`/message/${user.id}`);
+  };
 
   const users = data?.SearchUsers?.users ?? [];
   const isSearching = !shouldSkip;
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="relative mb-6">
+      <div className="relative mb-3">
+        <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={searchTerm}
           onChange={handleInputChange}
           placeholder={placeholder}
-          className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 pl-4 focus:outline-none focus:ring-2 focus:ring-gray-600"
+          className="w-full bg-secondary/50 border border-border/70 text-foreground placeholder:text-muted-foreground/60 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
         />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <IoSearchOutline className="w-5 h-5 text-gray-400" />
-        </div>
       </div>
 
       {isSearching ? (
-        <div className="flex-1 overflow-y-auto space-y-3">
-          {loading && <MessageSkeletonList count={5} />}
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+          {loading && <MessageSkeletonList count={4} />}
 
           {error && !loading && (
-            <div className="text-red-400 text-center py-6">
+            <div className="text-destructive text-center py-6 text-xs">
               Failed to search users. Please try again.
             </div>
           )}
 
           {!loading && !error && users.length === 0 && (
-            <div className="text-gray-400 text-center py-8">
-              No users match your search.
+            <div className="text-muted-foreground text-center py-8 text-xs">
+              No users match your query.
             </div>
           )}
 
           {!loading && !error && users.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               {users.map((user) => (
                 <div
-                 onClick={() => handleMessageRoute(user)}
+                  onClick={() => handleMessageRoute(user)}
                   key={user.id}
-                  className="flex pointer items-center justify-between p-3 rounded-lg bg-gray-900/40 hover:bg-gray-900 transition-colors"
+                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-secondary/50 transition-colors cursor-pointer group"
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 min-w-0 flex-1">
                     <Image
                       src={user.avatarUrl || "/noAvatar.png"}
                       alt={user.firstname}
-                      width={40}
-                      height={40}
-                      className="w-10 h-10 rounded-full object-cover"
+                      width={36}
+                      height={36}
+                      className="w-9 h-9 rounded-full object-cover ring-1 ring-border shrink-0"
                     />
-                    <div>
-                      <p className="text-white font-medium">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                         {user.firstname} {user.lastname ?? ""}
                       </p>
-                      <p className="text-gray-400 text-sm">{formatBio(user.bio)}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{formatBio(user.bio)}</p>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase">
-                    View
+                  <span className="text-[10px] font-semibold text-primary/80 group-hover:text-primary px-2 py-0.5 rounded-full bg-primary/10 shrink-0">
+                    Chat
                   </span>
                 </div>
               ))}
@@ -181,7 +177,7 @@ function Searching({
       ) : (
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto space-y-3"
+          className="flex-1 overflow-y-auto space-y-2 pr-1"
         >
           {defaultContent}
         </div>

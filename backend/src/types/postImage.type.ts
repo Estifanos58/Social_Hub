@@ -1,14 +1,14 @@
-import { Field, ObjectType } from "@nestjs/graphql";
-import { PostDto } from "./post.type";
+import { Field, ObjectType } from '@nestjs/graphql';
+import { PostDto } from './post.type';
 
 @ObjectType()
 export class PostImageDto {
-    @Field()
-    id: string;
+  @Field()
+  id: string;
 
-    @Field()
-    url: string;
+  @Field()
+  url: string;
 
-    @Field()
-    postId: string;
+  @Field()
+  postId: string;
 }

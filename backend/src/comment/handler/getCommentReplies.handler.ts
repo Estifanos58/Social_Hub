@@ -1,17 +1,27 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetCommentRepliesQuery } from '../query/getCommentReplies.query';
 import { PrismaService } from 'src/prisma.service';
-import { CommentRepliesConnectionDto, CommentEdgeDto } from '../types/pagination.types';
+import {
+  CommentRepliesConnectionDto,
+  CommentEdgeDto,
+} from '../types/pagination.types';
 import { NotFoundException } from '@nestjs/common';
 
 @QueryHandler(GetCommentRepliesQuery)
-export class GetCommentRepliesHandler implements IQueryHandler<GetCommentRepliesQuery> {
+export class GetCommentRepliesHandler
+  implements IQueryHandler<GetCommentRepliesQuery>
+{
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(q: GetCommentRepliesQuery): Promise<CommentRepliesConnectionDto> {
+  async execute(
+    q: GetCommentRepliesQuery,
+  ): Promise<CommentRepliesConnectionDto> {
     // Ensure parent exists
-    const parent = await this.prisma.comment.findUnique({ where: { id: q.commentId } });
-    if (!parent || parent.deletedAt) throw new NotFoundException('Comment not found');
+    const parent = await this.prisma.comment.findUnique({
+      where: { id: q.commentId },
+    });
+    if (!parent || parent.deletedAt)
+      throw new NotFoundException('Comment not found');
 
     const take = Math.min(q.first ?? 5, 50);
     const direct = await this.prisma.comment.findMany({
@@ -28,7 +38,14 @@ export class GetCommentRepliesHandler implements IQueryHandler<GetCommentReplies
         createdAt: true,
         updatedAt: true,
         deletedAt: true,
-        createdBy: { select: { id: true, firstname: true, lastname: true, avatarUrl: true } },
+        createdBy: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
 
@@ -38,7 +55,7 @@ export class GetCommentRepliesHandler implements IQueryHandler<GetCommentReplies
     let grandchildren: any[] = [];
     if (q.includeChildren && sliced.length) {
       grandchildren = await this.prisma.comment.findMany({
-        where: { parentId: { in: sliced.map(c => c.id) }, deletedAt: null },
+        where: { parentId: { in: sliced.map((c) => c.id) }, deletedAt: null },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: q.secondLevelLimit * sliced.length + 1,
         select: {
@@ -50,23 +67,30 @@ export class GetCommentRepliesHandler implements IQueryHandler<GetCommentReplies
           createdAt: true,
           updatedAt: true,
           deletedAt: true,
-          createdBy: { select: { id: true, firstname: true, lastname: true, avatarUrl: true } },
+          createdBy: {
+            select: {
+              id: true,
+              firstname: true,
+              lastname: true,
+              avatarUrl: true,
+            },
+          },
         },
       });
     }
 
     // counts for each direct reply
-    const directIds = sliced.map(c => c.id);
+    const directIds = sliced.map((c) => c.id);
     const countsRaw = await this.prisma.comment.groupBy({
       by: ['parentId'],
       where: { parentId: { in: directIds }, deletedAt: null },
       _count: { parentId: true },
     });
     const countMap = new Map<string, number>();
-    countsRaw.forEach(r => countMap.set(r.parentId!, r._count.parentId));
+    countsRaw.forEach((r) => countMap.set(r.parentId!, r._count.parentId));
 
     const byParent = new Map<string, any[]>();
-    grandchildren.forEach(g => {
+    grandchildren.forEach((g) => {
       if (!g.parentId) return;
       if (!byParent.has(g.parentId)) byParent.set(g.parentId, []);
       byParent.get(g.parentId)!.push(g);
@@ -85,8 +109,13 @@ export class GetCommentRepliesHandler implements IQueryHandler<GetCommentReplies
 
     const hydrated = sliced.map(attach);
 
-    const edges: CommentEdgeDto[] = hydrated.map(c => ({ cursor: c.id, node: c }));
-    const totalCount = await this.prisma.comment.count({ where: { parentId: q.commentId, deletedAt: null } });
+    const edges: CommentEdgeDto[] = hydrated.map((c) => ({
+      cursor: c.id,
+      node: c,
+    }));
+    const totalCount = await this.prisma.comment.count({
+      where: { parentId: q.commentId, deletedAt: null },
+    });
 
     return {
       edges,

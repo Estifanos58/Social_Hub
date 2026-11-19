@@ -1,5 +1,8 @@
-import { Response } from "express";
+import { Response } from 'express';
 
 export class GoogleOAuthCommand {
-    constructor(public readonly code: string, public readonly res: Response) {}
+  constructor(
+    public readonly code: string,
+    public readonly res: Response,
+  ) {}
 }

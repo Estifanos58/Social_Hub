@@ -84,7 +84,7 @@ export const VERIFICATIONTOKEN = `
   </div>
 </body>
 </html>
-`
+`;
 
 export const EMAILVERIFIED = `
 <!DOCTYPE html>
@@ -163,7 +163,7 @@ export const EMAILVERIFIED = `
   </div>
 </body>
 </html>
-`
+`;
 
 export const FORGOTPASSWORD = `
 <!DOCTYPE html>
@@ -252,7 +252,7 @@ export const FORGOTPASSWORD = `
   </div>
 </body>
 </html>
-`
+`;
 
 export const PASSWORDRESETCONFIRMED = `
 <!DOCTYPE html>
@@ -332,4 +332,4 @@ export const PASSWORDRESETCONFIRMED = `
   </div>
 </body>
 </html>
-`
+`;

@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Camera } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { uploadImageToCloudinary } from "@/lib/uploadFile";
 
 interface ImageUploadProps {
@@ -40,71 +39,69 @@ export default function ImageUpload({ formData, setFormData }: ImageUploadProps)
         ...prev,
         avatarUrl: result.url!,
       }));
-      setStatusMessage({ text: "Upload successful!", type: "success" });
+      setStatusMessage({ text: "Avatar updated successfully!", type: "success" });
     } else {
-      setStatusMessage({ text: result.error || "Upload failed", type: "error" });
+      setStatusMessage({ text: result.error || "Upload failed. Please try again.", type: "error" });
     }
   };
 
   return (
-    <div>
-      <CardContent>
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <Avatar className="h-24 w-24 relative">
-              <AvatarImage
-                src={formData.avatarUrl || "/placeholder.svg"}
-                alt="Profile"
-              />
-              <AvatarFallback className="text-lg">
-                {formData.firstName?.[0] ?? ""}
-                {formData.lastName?.[0] ?? ""}
-              </AvatarFallback>
+    <div className="flex items-center gap-5">
+      <div className="relative group">
+        <Avatar className="h-20 w-20 ring-2 ring-border/80 shadow-md relative overflow-hidden">
+          <AvatarImage
+            src={formData.avatarUrl || "/noAvatar.png"}
+            alt="Profile Avatar"
+            className="object-cover"
+          />
+          <AvatarFallback className="text-xl font-bold bg-secondary text-foreground">
+            {formData.firstName?.[0]?.toUpperCase() ?? ""}
+            {formData.lastName?.[0]?.toUpperCase() ?? ""}
+          </AvatarFallback>
 
-              {uploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                  <p className="text-white font-medium">{progress}%</p>
-                </div>
-              )}
-            </Avatar>
+          {uploading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 rounded-full z-20">
+              <Loader2 className="h-5 w-5 animate-spin text-primary mb-1" />
+              <p className="text-[10px] text-white font-mono">{progress}%</p>
+            </div>
+          )}
+        </Avatar>
 
-            <label
-              htmlFor="profile-upload"
-              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              <Camera className="h-6 w-6 text-white" />
-            </label>
-            <input
-              id="profile-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            />
-          </div>
+        <label
+          htmlFor="profile-upload"
+          className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10"
+        >
+          <Camera className="h-5 w-5 text-white" />
+        </label>
+        <input
+          id="profile-upload"
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
+      </div>
 
-          <div className="flex flex-col">
-            <p className="text-sm text-muted-foreground mb-2">
-              Click on the avatar to upload a new picture
-            </p>
-            <p className="text-xs text-muted-foreground mb-1">
-              JPG, PNG or GIF. Max size 5MB.
-            </p>
+      <div className="flex flex-col space-y-1">
+        <p className="text-xs font-semibold text-foreground">
+          Upload new photo
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          Recommended: square JPG, PNG or WebP, up to 5MB.
+        </p>
 
-            {statusMessage && (
-              <p
-                className={`text-sm font-medium ${
-                  statusMessage.type === "success"
-                    ? "text-green-500"
-                    : "text-red-500"
-                }`}
-              >
-                {statusMessage.text}
-              </p>
-            )}
-          </div>
-        </div>
-      </CardContent>
+        {statusMessage && (
+          <p
+            className={`text-xs font-medium pt-1 ${
+              statusMessage.type === "success"
+                ? "text-emerald-400"
+                : "text-destructive"
+            }`}
+          >
+            {statusMessage.text}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

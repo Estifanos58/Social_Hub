@@ -1,13 +1,20 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetPostCommentsQuery } from '../query/getPostComments.query';
 import { PrismaService } from 'src/prisma.service';
-import { PostCommentsConnectionDto, CommentEdgeDto } from '../types/pagination.types';
+import {
+  PostCommentsConnectionDto,
+  CommentEdgeDto,
+} from '../types/pagination.types';
 
 @QueryHandler(GetPostCommentsQuery)
-export class GetPostCommentsHandler implements IQueryHandler<GetPostCommentsQuery> {
+export class GetPostCommentsHandler
+  implements IQueryHandler<GetPostCommentsQuery>
+{
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetPostCommentsQuery): Promise<PostCommentsConnectionDto> {
+  async execute(
+    query: GetPostCommentsQuery,
+  ): Promise<PostCommentsConnectionDto> {
     const take = Math.min(query.first ?? 5, 50); // safety cap
 
     // 1. Fetch top-level parents (cursor pagination by id for now)
@@ -25,7 +32,14 @@ export class GetPostCommentsHandler implements IQueryHandler<GetPostCommentsQuer
         createdAt: true,
         updatedAt: true,
         deletedAt: true,
-        createdBy: { select: { id: true, firstname: true, lastname: true, avatarUrl: true } },
+        createdBy: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
 
@@ -42,7 +56,10 @@ export class GetPostCommentsHandler implements IQueryHandler<GetPostCommentsQuer
 
     // 2. Fetch first-level replies for all parents (batched)
     const firstLevel = await this.prisma.comment.findMany({
-      where: { parentId: { in: slicedParents.map(p => p.id) }, deletedAt: null },
+      where: {
+        parentId: { in: slicedParents.map((p) => p.id) },
+        deletedAt: null,
+      },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take: query.directRepliesLimit * slicedParents.length + 1, // mild overfetch; later we cap per parent when assembling
       select: {
@@ -54,14 +71,24 @@ export class GetPostCommentsHandler implements IQueryHandler<GetPostCommentsQuer
         createdAt: true,
         updatedAt: true,
         deletedAt: true,
-        createdBy: { select: { id: true, firstname: true, lastname: true, avatarUrl: true } },
+        createdBy: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
 
     // 3. Fetch second-level replies for all first-level (grandchildren)
     const secondLevel = firstLevel.length
       ? await this.prisma.comment.findMany({
-          where: { parentId: { in: firstLevel.map(c => c.id) }, deletedAt: null },
+          where: {
+            parentId: { in: firstLevel.map((c) => c.id) },
+            deletedAt: null,
+          },
           orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
           take: query.secondLevelLimit * firstLevel.length + 1,
           select: {
@@ -73,25 +100,35 @@ export class GetPostCommentsHandler implements IQueryHandler<GetPostCommentsQuer
             createdAt: true,
             updatedAt: true,
             deletedAt: true,
-            createdBy: { select: { id: true, firstname: true, lastname: true, avatarUrl: true } },
+            createdBy: {
+              select: {
+                id: true,
+                firstname: true,
+                lastname: true,
+                avatarUrl: true,
+              },
+            },
           },
         })
       : [];
 
     // 4. Counts (replyCount per parent & per first-level) using groupBy for existing (non-deleted) replies
-    const allParentsIds = slicedParents.map(p => p.id);
-    const allFirstLevelIds = firstLevel.map(f => f.id);
+    const allParentsIds = slicedParents.map((p) => p.id);
+    const allFirstLevelIds = firstLevel.map((f) => f.id);
     const countsRaw = await this.prisma.comment.groupBy({
       by: ['parentId'],
-      where: { parentId: { in: [...allParentsIds, ...allFirstLevelIds] }, deletedAt: null },
+      where: {
+        parentId: { in: [...allParentsIds, ...allFirstLevelIds] },
+        deletedAt: null,
+      },
       _count: { parentId: true },
     });
     const countMap = new Map<string, number>();
-    countsRaw.forEach(r => countMap.set(r.parentId!, r._count.parentId));
+    countsRaw.forEach((r) => countMap.set(r.parentId!, r._count.parentId));
 
     // 5. Build lookup
     const byParent = new Map<string, any[]>();
-    [...firstLevel, ...secondLevel].forEach(c => {
+    [...firstLevel, ...secondLevel].forEach((c) => {
       if (!c.parentId) return;
       if (!byParent.has(c.parentId)) byParent.set(c.parentId, []);
       byParent.get(c.parentId)!.push(c);
@@ -100,19 +137,23 @@ export class GetPostCommentsHandler implements IQueryHandler<GetPostCommentsQuer
     // 6. Attach children with per-parent limits & hasNextPage flags
     const attach = (node: any, depth: number): any => {
       const children = byParent.get(node.id) || [];
-      const limit = depth === 0 ? query.directRepliesLimit : query.secondLevelLimit;
+      const limit =
+        depth === 0 ? query.directRepliesLimit : query.secondLevelLimit;
       const limited = children.slice(0, limit);
       return {
         ...node,
-        replies: limited.map(c => attach(c, depth + 1)),
+        replies: limited.map((c) => attach(c, depth + 1)),
         replyCount: countMap.get(node.id) || 0,
         repliesHasNextPage: (countMap.get(node.id) || 0) > limited.length,
       };
     };
 
-    const hydrated = slicedParents.map(p => attach(p, 0));
+    const hydrated = slicedParents.map((p) => attach(p, 0));
 
-    const edges: CommentEdgeDto[] = hydrated.map(c => ({ cursor: c.id, node: c }));
+    const edges: CommentEdgeDto[] = hydrated.map((c) => ({
+      cursor: c.id,
+      node: c,
+    }));
 
     // totalCount of top-level comments (separate count query)
     const totalCount = await this.prisma.comment.count({

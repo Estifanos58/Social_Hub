@@ -1,7 +1,11 @@
-import { Field, GraphQLISODateTime, ObjectType, registerEnumType } from '@nestjs/graphql';
+import {
+  Field,
+  GraphQLISODateTime,
+  ObjectType,
+  registerEnumType,
+} from '@nestjs/graphql';
 import { ChatroomRole } from '@prisma/client';
 import { ChatroomDto, UserDto } from '.';
-
 
 @ObjectType()
 export class ChatroomUserDto {
@@ -33,8 +37,7 @@ export class ChatroomUserDto {
   chatroom?: ChatroomDto;
 }
 
-
 registerEnumType(ChatroomRole, {
-  name: "ChatRoomRole",
-  description: "Types of Roles in the chat room"
-})
+  name: 'ChatRoomRole',
+  description: 'Types of Roles in the chat room',
+});

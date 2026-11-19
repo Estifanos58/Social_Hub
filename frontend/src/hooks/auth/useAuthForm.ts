@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { z } from "zod";
 import { useMutation } from "@apollo/client/react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { LOGIN_USER } from "@/graphql/mutations/auth/LoginUser";
 import { REGISTER_USER } from "@/graphql/mutations/auth/Register";
@@ -73,19 +73,25 @@ export const useAuthForm = () => {
   const [errors, setErrors] = useState<ErrorState>(initialErrorState);
 
   const navigate = useRouter();
+  const searchParams = useSearchParams();
   const { setUser, setAccessToken } = useUserStore();
 
-  const persistTokens = useCallback(
-    (accessToken?: string | null, refreshToken?: string | null) => {
-      setAccessToken(accessToken ?? null);
+  const getDestination = useCallback(() => {
+    const redirectParam = searchParams?.get("redirectTo");
+    if (
+      redirectParam &&
+      redirectParam.startsWith("/") &&
+      !redirectParam.startsWith("/auth") &&
+      redirectParam !== "/"
+    ) {
+      return redirectParam;
+    }
+    return "/message";
+  }, [searchParams]);
 
-      if (typeof window !== "undefined") {
-        if (refreshToken) {
-          window.localStorage.setItem("refreshToken", refreshToken);
-        } else {
-          window.localStorage.removeItem("refreshToken");
-        }
-      }
+  const persistTokens = useCallback(
+    (accessToken?: string | null, _refreshToken?: string | null) => {
+      setAccessToken(accessToken ?? null);
     },
     [setAccessToken],
   );
@@ -125,11 +131,13 @@ export const useAuthForm = () => {
       e.preventDefault();
       setErrors(initialErrorState);
 
+      const targetPath = getDestination();
+
       try {
         if (!isLogin) {
           const registerData = SignUp.parse(formData);
 
-          await registerUser({
+          const res = await registerUser({
             variables: {
               firstname: registerData.firstname,
               lastname: registerData.lastname,
@@ -142,18 +150,27 @@ export const useAuthForm = () => {
 
               if (auth?.user) {
                 setUser(mapUserForStore(auth.user));
-                navigate.push("/auth/verify");
                 toast.success("Registration successful!");
+                navigate.push(targetPath);
               }
             },
           }).catch((err) => {
             console.log(err.graphQLErrors, "ERROR");
             toast.error(err.message || "Registration failed");
+            return null;
           });
+
+          if (res?.data?.register?.user && !useUserStore.getState().user) {
+            const auth = res.data.register;
+            persistTokens(auth?.accessToken ?? null, auth?.refreshToken ?? null);
+            setUser(mapUserForStore(auth.user));
+            toast.success("Registration successful!");
+            navigate.push(targetPath);
+          }
         } else {
           const loginData = Login.parse(formData);
 
-          await loginUser({
+          const res = await loginUser({
             variables: {
               email: loginData.email,
               password: loginData.password,
@@ -166,13 +183,22 @@ export const useAuthForm = () => {
               if (auth?.user) {
                 setUser(mapUserForStore(auth.user));
                 toast.success("Login successful!");
-                navigate.push("/");
+                navigate.push(targetPath);
               }
             },
           }).catch((err) => {
             console.log(err.graphQLErrors, "ERROR");
             toast.error(err.message || "Login failed");
+            return null;
           });
+
+          if (res?.data?.login?.user && !useUserStore.getState().user) {
+            const auth = res.data.login;
+            persistTokens(auth?.accessToken ?? null, auth?.refreshToken ?? null);
+            setUser(mapUserForStore(auth.user));
+            toast.success("Login successful!");
+            navigate.push(targetPath);
+          }
         }
       } catch (err) {
         if (err instanceof z.ZodError) {
@@ -187,7 +213,17 @@ export const useAuthForm = () => {
         }
       }
     },
-    [formData, isLogin, loginUser, registerUser, setUser, navigate, mapUserForStore, persistTokens],
+    [
+      formData,
+      isLogin,
+      loginUser,
+      registerUser,
+      setUser,
+      navigate,
+      mapUserForStore,
+      persistTokens,
+      getDestination,
+    ],
   );
 
   const loading = useMemo(() => (isLogin ? loginLoading : registerLoading), [isLogin, loginLoading, registerLoading]);

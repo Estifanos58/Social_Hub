@@ -130,7 +130,7 @@ export const useResetPassword = (): UseResetPasswordReturn => {
 
               setUser(mappedUser);
               toast.success("✅ Password reset successfully!");
-              router.push("/");
+              router.push("/message");
             } else {
               toast.error("Password reset failed. Try again.");
             }

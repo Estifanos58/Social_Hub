@@ -24,9 +24,13 @@ import { AddUserToChatroomCommand } from './commands/AddUserToChatroom.command';
 import { GetChatroomDetailQuery } from './query/GetChatroomDetail.query';
 import { redisPubSub } from 'src/pubsub';
 
-
-type SubscriptionContext = { pubSub?: RedisPubSub };
-type RequestContext = { req: Request; pubSub?: RedisPubSub };
+type SubscriptionContext = {
+  pubSub?: RedisPubSub;
+  userId?: string;
+  user?: any;
+  req?: Request;
+};
+type RequestContext = { req: Request; pubSub?: RedisPubSub; userId?: string };
 
 @Resolver()
 export class ChatroomResolver {
@@ -34,8 +38,7 @@ export class ChatroomResolver {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly prismaService: PrismaService,
-  ) {
-  }
+  ) {}
 
   @UseGuards(GraphQLAuthGuard)
   @Query(() => ChatroomDetailDto)
@@ -55,7 +58,11 @@ export class ChatroomResolver {
     }
 
     return this.queryBus.execute(
-      new GetChatroomDetailQuery(chatroomId ?? null, userId, otherUserId ?? null),
+      new GetChatroomDetailQuery(
+        chatroomId ?? null,
+        userId,
+        otherUserId ?? null,
+      ),
     );
   }
 
@@ -63,36 +70,50 @@ export class ChatroomResolver {
     return context?.pubSub ?? redisPubSub;
   }
 
-
-  @Subscription(()=> MessageDto, {
+  @Subscription(() => MessageDto, {
     nullable: true,
-    resolve: (value) => value.newMessage
+    resolve: (value) => value.newMessage,
+    filter: (payload, variables, context: SubscriptionContext) => {
+      const subscriberId = context?.userId ?? context?.req?.user?.sub;
+      return Boolean(subscriberId && subscriberId === variables?.otherUserId);
+    },
   })
   chatroomCreated(
-  @Args('otherUserId') otherUserId?: string,
-  @Context() context?: SubscriptionContext,
-  ){
+    @Args('otherUserId') otherUserId: string,
+    @Context() context?: SubscriptionContext,
+  ) {
+    const subscriberId = context?.userId ?? context?.req?.user?.sub;
+    if (subscriberId && subscriberId !== otherUserId) {
+      throw new UnauthorizedException(
+        'Cannot subscribe to chatrooms created for another user',
+      );
+    }
     const pubSub = this.getPubSub(context);
     return pubSub.asyncIterableIterator(`createChatroom.${otherUserId}`);
   }
-
 
   // Create Chatroom Mutation
   @UseGuards(GraphQLAuthGuard)
   @Mutation(() => String)
   async createChatroomMutation(
-  @Args('otherUserId', { nullable: true }) otherUserId: string,
-  @Args('isGroupChat', { nullable: true }) isGroupChat: boolean,
-  @Args('chatroomName', { nullable: true }) chatroomName: string,
-  @Args('avatarUrl', { nullable: true }) avatarUrl: string,
-  @Context() context: RequestContext,
+    @Args('otherUserId', { nullable: true }) otherUserId: string,
+    @Args('isGroupChat', { nullable: true }) isGroupChat: boolean,
+    @Args('chatroomName', { nullable: true }) chatroomName: string,
+    @Args('avatarUrl', { nullable: true }) avatarUrl: string,
+    @Context() context: RequestContext,
   ) {
     const userId = context.req.user?.sub;
     if (!userId) {
       throw new UnauthorizedException('Unauthorized');
     }
     const chatroom = await this.commandBus.execute(
-      new CreateChatroomCommand(userId, otherUserId, isGroupChat, chatroomName, avatarUrl),
+      new CreateChatroomCommand(
+        userId,
+        otherUserId,
+        isGroupChat,
+        chatroomName,
+        avatarUrl,
+      ),
     );
     if (!chatroom) throw new NotFoundException('Chatroom could not be created');
     if (otherUserId) {
@@ -117,19 +138,25 @@ export class ChatroomResolver {
     return chatroom.id;
   }
 
-
-
   @Subscription(() => ChatroomDto, {
     nullable: true,
     resolve: (value) => value.chatroom,
+    filter: (payload, variables, context: SubscriptionContext) => {
+      const subscriberId = context?.userId ?? context?.req?.user?.sub;
+      return Boolean(subscriberId && subscriberId === variables?.otherUserId);
+    },
   })
   userAddedToChatroom(
     @Args('otherUserId') otherUserId: string,
-  @Context() context?: SubscriptionContext,
+    @Context() context?: SubscriptionContext,
   ) {
     if (!otherUserId) {
-      throw new BadRequestException(
-        'otherUserId is required',
+      throw new BadRequestException('otherUserId is required');
+    }
+    const subscriberId = context?.userId ?? context?.req?.user?.sub;
+    if (subscriberId && subscriberId !== otherUserId) {
+      throw new UnauthorizedException(
+        'Cannot subscribe to chatrooms for another user',
       );
     }
 
@@ -179,5 +206,4 @@ export class ChatroomResolver {
 
     return addedUserIds;
   }
-
 }

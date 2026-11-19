@@ -69,7 +69,7 @@ export const useVerifyEmailForm = (): UseVerifyEmailFormReturn => {
         onCompleted: (data) => {
           if (data?.verifyEmail) {
             toast.success("Email verified successfully!");
-            router.push('/')
+            router.push('/message');
           } else {
             toast.error("Verification failed. Try again.");
           }

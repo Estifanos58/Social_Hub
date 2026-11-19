@@ -11,6 +11,12 @@ export class CommentCreatedEventHandler {
   async handle(event: CommentCreatedEvent) {
     const { postId, commentId, postOwnerId, commenterId, excerpt } = event;
     if (postOwnerId === commenterId) return; // avoid self-notify
-    await this.notifications.commentOnPost(postOwnerId, commenterId, postId, commentId, { excerpt });
+    await this.notifications.commentOnPost(
+      postOwnerId,
+      commenterId,
+      postId,
+      commentId,
+      { excerpt },
+    );
   }
 }

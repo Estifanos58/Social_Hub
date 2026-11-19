@@ -19,7 +19,10 @@ export class UserDisconnectedEventHandler {
         data: { lastSeenAt: disconnectedAt },
       });
     } catch (error) {
-      this.logger.error(`Failed to update lastSeenAt for user ${userId}`, error as Error);
+      this.logger.error(
+        `Failed to update lastSeenAt for user ${userId}`,
+        error as Error,
+      );
     }
   }
 }

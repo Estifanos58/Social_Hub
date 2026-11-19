@@ -1,6 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
 import {
-    ArrayMaxSize,
+  ArrayMaxSize,
   IsArray,
   IsNotEmpty,
   IsOptional,
@@ -22,5 +22,3 @@ export class CreatePostDto {
   @ArrayMaxSize(5, { message: 'A post can have at most 5 images' })
   imageUrls?: string[];
 }
-
-
