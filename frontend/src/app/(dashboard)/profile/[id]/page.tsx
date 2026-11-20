@@ -1,9 +1,21 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Globe, Grid3X3, Heart, Lock, MessageCircle, Edit, Mail } from "lucide-react";
+import {
+  Globe,
+  Grid3X3,
+  Heart,
+  Lock,
+  MessageCircle,
+  Edit,
+  Mail,
+  UserCheck,
+  UserPlus,
+  Clock,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import { useProfilePage } from "../../../../hooks/user/useProfilePage";
 
@@ -14,7 +26,6 @@ type ProfilePageProps = {
 };
 
 export default function ProfilePage({ params }: ProfilePageProps) {
-  // Support both Next.js 15 async params and regular params
   const resolvedParams = "then" in params ? use(params as Promise<{ id: string }>) : params;
   const { id } = resolvedParams;
 
@@ -26,9 +37,18 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     hoveredPost,
     setHoveredPost,
     isPrivate,
+    followStatus,
+    followersCount,
+    followingCount,
+    isActionLoading,
+    messageLoading,
+    isOwner,
+    handleFollowAction,
+    handleStartMessage,
     handleSelectPost,
-    currentUser,
   } = useProfilePage(id);
+
+  const [followBtnHovered, setFollowBtnHovered] = useState(false);
 
   if (loading) {
     return (
@@ -59,6 +79,45 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       </div>
     );
   }
+
+  const canViewPosts = !isPrivate || isOwner || followStatus === "ACCEPTED";
+
+  const renderFollowButtonText = () => {
+    if (isActionLoading) {
+      return (
+        <span className="flex items-center gap-1.5">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Updating...
+        </span>
+      );
+    }
+    if (followStatus === "ACCEPTED") {
+      return followBtnHovered ? (
+        <span className="text-destructive flex items-center gap-1.5">Unfollow</span>
+      ) : (
+        <span className="flex items-center gap-1.5">
+          <UserCheck className="w-3.5 h-3.5 text-primary" />
+          Following
+        </span>
+      );
+    }
+    if (followStatus === "PENDING") {
+      return followBtnHovered ? (
+        <span className="text-destructive flex items-center gap-1.5">Cancel Request</span>
+      ) : (
+        <span className="flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5 text-amber-500" />
+          Requested
+        </span>
+      );
+    }
+    return (
+      <span className="flex items-center gap-1.5">
+        <UserPlus className="w-3.5 h-3.5" />
+        {isPrivate ? "Request Follow" : "Follow"}
+      </span>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background flex-1 overflow-y-auto text-foreground">
@@ -96,18 +155,53 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-2.5">
-              {currentUser && id === currentUser.id ? (
+              {isOwner ? (
                 <Link href="/profile/edit">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-xl h-9 px-4 text-xs font-semibold gap-2 border-border/80 hover:bg-secondary/70"
+                    className="rounded-xl h-9 px-4 text-xs font-semibold gap-2 border-border/80 hover:bg-secondary/70 cursor-pointer"
                   >
                     <Edit className="w-3.5 h-3.5" />
                     Edit Profile
                   </Button>
                 </Link>
-              ) : null}
+              ) : (
+                <>
+                  <Button
+                    variant={followStatus === "NONE" ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleFollowAction}
+                    disabled={isActionLoading}
+                    onMouseEnter={() => setFollowBtnHovered(true)}
+                    onMouseLeave={() => setFollowBtnHovered(false)}
+                    className={`rounded-xl h-9 px-4 text-xs font-semibold cursor-pointer transition-all ${
+                      followStatus === "ACCEPTED" && followBtnHovered
+                        ? "border-destructive/60 bg-destructive/10 hover:bg-destructive/20"
+                        : followStatus === "PENDING" && followBtnHovered
+                        ? "border-destructive/60 bg-destructive/10 hover:bg-destructive/20"
+                        : ""
+                    }`}
+                  >
+                    {renderFollowButtonText()}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartMessage}
+                    disabled={messageLoading}
+                    className="rounded-xl h-9 px-4 text-xs font-semibold gap-2 border-border/80 hover:bg-secondary/70 cursor-pointer"
+                  >
+                    {messageLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <MessageCircle className="w-3.5 h-3.5 text-primary" />
+                    )}
+                    Message
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
@@ -141,7 +235,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               <span className="flex items-center gap-1.5">
                 {isPrivate ? (
                   <>
-                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Lock className="w-3.5 h-3.5 text-amber-500" />
                     Private Account
                   </>
                 ) : (
@@ -158,19 +252,19 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           <div className="flex gap-8 mt-5 py-3 border-y border-border/60">
             <div>
               <span className="font-bold text-base text-foreground font-mono">
-                {profile.posts?.length || 0}
+                {canViewPosts ? profile.posts?.length || 0 : "-"}
               </span>
               <span className="text-xs text-muted-foreground ml-1.5 font-medium">Posts</span>
             </div>
             <div>
               <span className="font-bold text-base text-foreground font-mono">
-                {profile.followers || 0}
+                {followersCount}
               </span>
               <span className="text-xs text-muted-foreground ml-1.5 font-medium">Followers</span>
             </div>
             <div>
               <span className="font-bold text-base text-foreground font-mono">
-                {profile.following || 0}
+                {followingCount}
               </span>
               <span className="text-xs text-muted-foreground ml-1.5 font-medium">Following</span>
             </div>
@@ -185,43 +279,58 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           </button>
         </div>
 
-        {/* Media Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {profile.posts?.map((post: any) => (
-            <div
-              key={post.id}
-              onClick={() => handleSelectPost(post)}
-              className="relative aspect-square group cursor-pointer overflow-hidden rounded-xl border border-border/60 bg-secondary/30 transition-all duration-200"
-              onMouseEnter={() => setHoveredPost(post.id)}
-              onMouseLeave={() => setHoveredPost(null)}
-            >
-              <img
-                src={post.imageUrl || "/placeholder.svg"}
-                alt={`Post ${post.id}`}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              {hoveredPost === post.id && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center space-x-6 transition-opacity duration-200">
-                  <div className="flex items-center text-white font-semibold text-sm">
-                    <Heart className="w-4 h-4 mr-1.5 fill-white" />
-                    {post.likes || 0}
-                  </div>
-                  <div className="flex items-center text-white font-semibold text-sm">
-                    <MessageCircle className="w-4 h-4 mr-1.5 fill-white" />
-                    {post.comments || 0}
-                  </div>
-                </div>
-              )}
+        {/* Content View: Private Account Notice vs Media Grid */}
+        {!canViewPosts ? (
+          <div className="py-20 text-center space-y-3.5 border border-border/60 rounded-2xl bg-card/40 my-4 max-w-lg mx-auto p-6">
+            <div className="w-14 h-14 rounded-full bg-secondary/80 border border-border flex items-center justify-center mx-auto text-muted-foreground">
+              <Lock className="w-6 h-6 text-primary" />
             </div>
-          ))}
-        </div>
-
-        {profile.posts?.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground text-xs space-y-2">
-            <Grid3X3 className="h-8 w-8 mx-auto opacity-30" />
-            <p className="font-semibold text-foreground">No posts published yet</p>
-            <p>Updates shared by this user will be featured here.</p>
+            <h2 className="text-base font-bold text-foreground">This Account is Private</h2>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+              Follow this account to see their photos, videos, and shared updates.
+            </p>
           </div>
+        ) : (
+          <>
+            {/* Media Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {profile.posts?.map((post: any) => (
+                <div
+                  key={post.id}
+                  onClick={() => handleSelectPost(post)}
+                  className="relative aspect-square group cursor-pointer overflow-hidden rounded-xl border border-border/60 bg-secondary/30 transition-all duration-200"
+                  onMouseEnter={() => setHoveredPost(post.id)}
+                  onMouseLeave={() => setHoveredPost(null)}
+                >
+                  <img
+                    src={post.imageUrl || "/placeholder.svg"}
+                    alt={`Post ${post.id}`}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  {hoveredPost === post.id && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center space-x-6 transition-opacity duration-200">
+                      <div className="flex items-center text-white font-semibold text-sm">
+                        <Heart className="w-4 h-4 mr-1.5 fill-white" />
+                        {post.likes || 0}
+                      </div>
+                      <div className="flex items-center text-white font-semibold text-sm">
+                        <MessageCircle className="w-4 h-4 mr-1.5 fill-white" />
+                        {post.comments || 0}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {profile.posts?.length === 0 && (
+              <div className="text-center py-16 text-muted-foreground text-xs space-y-2">
+                <Grid3X3 className="h-8 w-8 mx-auto opacity-30" />
+                <p className="font-semibold text-foreground">No posts published yet</p>
+                <p>Updates shared by this user will be featured here.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

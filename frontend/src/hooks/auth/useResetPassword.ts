@@ -118,7 +118,7 @@ export const useResetPassword = (): UseResetPasswordReturn => {
                 id: user.id,
                 firstname: user.firstname,
                 lastname: "",
-                email: user.email,
+                email: user.email ?? "",
                 avatarUrl: user.avatarUrl ?? undefined,
                 lastSeenAt: undefined,
                 bio: user.bio ?? undefined,

@@ -11,6 +11,11 @@ import {
   GetPostHandler,
   GetPostsHandler,
   RemoveReactionHandler,
+  EditPostHandler,
+  SavePostHandler,
+  UnsavePostHandler,
+  ReportPostHandler,
+  NotInterestedPostHandler,
 } from './handler';
 import { NotificationModule } from 'src/notification/notification.module';
 import { PostReactionEventHandler } from './event/postReaction.event.handler';
@@ -21,6 +26,11 @@ const CommandHandlers = [
   DeletePostHandler,
   AddReactionHandler,
   RemoveReactionHandler,
+  EditPostHandler,
+  SavePostHandler,
+  UnsavePostHandler,
+  ReportPostHandler,
+  NotInterestedPostHandler,
 ];
 const QueryHandler = [GetPostsHandler, GetPostHandler];
 @Module({

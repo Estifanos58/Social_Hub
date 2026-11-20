@@ -13,6 +13,10 @@ import {
   SearchUsersHandler,
   UnFollowUserHandler,
   UpdateUserHandler,
+  AcceptFollowRequestHandler,
+  RejectFollowRequestHandler,
+  CancelFollowRequestHandler,
+  GetPendingFollowRequestsHandler,
 } from './handlers';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationModule } from 'src/notification/notification.module';
@@ -22,6 +26,9 @@ const CommandHandlers = [
   FollowUserHandler,
   UnFollowUserHandler,
   UpdateUserHandler,
+  AcceptFollowRequestHandler,
+  RejectFollowRequestHandler,
+  CancelFollowRequestHandler,
 ];
 const EventHandlers = [NewFollowerEventHandler, UserDisconnectedEventHandler];
 const QueryHandlers = [
@@ -32,6 +39,7 @@ const QueryHandlers = [
   SearchUsersHandler,
   GetChatUsersHandler,
   GetUserChatroomsHandler,
+  GetPendingFollowRequestsHandler,
 ];
 
 @Module({

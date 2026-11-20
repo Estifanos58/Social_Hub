@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { verify } from 'jsonwebtoken';
+import {
+  getAccessTokenSecret,
+  getRefreshTokenSecret,
+} from 'src/utils/security';
 
 @Injectable()
 export class TokenService {
@@ -28,10 +32,8 @@ export class TokenService {
   }
 
   validateAccessToken(token: string): any {
-    const accessSecret =
-      this.configService.get<string>('ACCESS_TOKEN_SECRET') ||
-      'default_access_secret_for_dev';
     try {
+      const accessSecret = getAccessTokenSecret(this.configService);
       return verify(token, accessSecret);
     } catch {
       return null;
@@ -39,18 +41,16 @@ export class TokenService {
   }
 
   validateRefreshToken(token: string): any {
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      'default_refresh_secret_for_dev';
     try {
+      const refreshSecret = getRefreshTokenSecret(this.configService);
       return verify(token, refreshSecret);
     } catch {
       return null;
     }
   }
 
-  // Backwards compatibility alias
+  // ONLY validates access token. Never accepts refresh tokens for general authentication.
   validateToken(token: string): any {
-    return this.validateAccessToken(token) || this.validateRefreshToken(token);
+    return this.validateAccessToken(token);
   }
 }

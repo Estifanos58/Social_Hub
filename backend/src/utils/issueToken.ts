@@ -4,6 +4,7 @@ import { User } from '@prisma/client';
 import { Response } from 'express';
 import * as crypto from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { getAccessTokenSecret, getRefreshTokenSecret } from './security';
 
 export const ACCESS_TOKEN_EXPIRES_AT = '1h';
 export const REFRESH_TOKEN_EXPIRES_AT = '15d';
@@ -25,12 +26,8 @@ export const issueToken = async (
     firstname: user.firstname,
   };
 
-  const accessTokenSecret =
-    configService.get<string>('ACCESS_TOKEN_SECRET') ||
-    'default_access_secret_for_dev';
-  const refreshTokenSecret =
-    configService.get<string>('REFRESH_TOKEN_SECRET') ||
-    'default_refresh_secret_for_dev';
+  const accessTokenSecret = getAccessTokenSecret(configService);
+  const refreshTokenSecret = getRefreshTokenSecret(configService);
 
   const accessToken = jwtService.sign(payload, {
     secret: accessTokenSecret,

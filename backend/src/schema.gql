@@ -154,6 +154,7 @@ type GetPostType {
   createdById: String!
   id: String!
   images: [PostImageDto!]
+  isSaved: Boolean
   reactions: [ReactionDto!]
   reactionsCount: Int!
   updatedAt: DateTime!
@@ -196,20 +197,30 @@ type MessageDto {
 type Mutation {
   UnfollowUser(followingId: String!): String!
   UpdateUser(updateUser: UpdateUserDto!): UserDto!
+  acceptFollowRequest(followerId: String!): String!
   addReaction(postId: String!, type: String!): Boolean!
   addUserToChatroomMutation(chatroomId: String!, otherUserIds: [String!]!, userId: String!): [String!]!
+  cancelFollowRequest(followingId: String!): String!
   createChatroomMutation(avatarUrl: String, chatroomName: String, isGroupChat: Boolean, otherUserId: String): String!
   createComment(createCommentInput: CreateCommentDto!): CommentDto!
   createMessageMutation(chatroomId: String, content: String, imageUrl: String, otherUserId: String): MessageDto!
   createPost(createPost: CreatePostDto!): String!
   deletePost(postId: String!): String!
+  editPost(content: String!, postId: String!): PostDto!
   followUser(followingId: String!): String!
   forgotPassword(email: String!): String!
   login(loginInput: LoginDto!): UserResponse!
   logout: String!
+  markAllNotificationsAsRead: Boolean!
+  markNotificationAsRead(id: String!): Boolean!
+  notInterestedPost(postId: String!): Boolean!
   register(registerInput: RegisterDto!): UserResponse!
+  rejectFollowRequest(followerId: String!): String!
   removeReaction(postId: String!): Boolean!
+  reportPost(postId: String!, reason: String!): Boolean!
   resetPassword(newPassword: String!, token: String!): UserResponse!
+  savePost(postId: String!): Boolean!
+  unsavePost(postId: String!): Boolean!
   userStartedTypingMutation(chatroomId: String!): UserDto!
   userStoppedTypingMutation(chatroomId: String!): UserDto!
   verifyEmail(token: String!): UserResponse!
@@ -274,6 +285,7 @@ type PostDto {
   deletedAt: DateTime
   id: String!
   images: [PostImageDto!]
+  isSaved: Boolean
   reactions: [ReactionDto!]
   updatedAt: DateTime!
 }
@@ -286,6 +298,7 @@ type PostFeedDto {
   createdById: String!
   id: String!
   images: [PostImageDto!]
+  isSaved: Boolean
   reactionsCount: Int!
   updatedAt: DateTime!
   userReaction: String
@@ -307,8 +320,9 @@ type Query {
   SearchUsers(searchUsersInput: SearchUsersInput!): SearchUsersResultDto!
   chatroomDetail(chatroomId: String, otherUserId: String): ChatroomDetailDto!
   commentReplies(after: String, commentId: String!, first: Int, includeChildren: Boolean, secondLevelLimit: Int): CommentRepliesConnectionDto!
+  getPendingFollowRequests: [UserDto!]!
   getPost(postId: String!): GetPostType!
-  getPosts(cursor: String!, take: Float!): PaginatedPostsDto!
+  getPosts(cursor: String, feedType: String, take: Float!): PaginatedPostsDto!
   getme: UserDto!
   messagesBetweenUsers(limit: Int, offset: Int, otherUserId: String): [MessageDto!]!
   notifications(cursor: String, take: Int): [NotificationDto!]!
@@ -356,7 +370,7 @@ type SearchUsersResultDto {
 
 type Subscription {
   chatroomCreated(otherUserId: String!): MessageDto
-  newMessage(chatroomId: String!, userId: String!): MessageDto
+  newMessage(chatroomId: String!, userId: String): MessageDto
   userAddedToChatroom(otherUserId: String!): ChatroomDto
   userDisconnect(userId: String!): UserPresenceDto
   userOnline(userId: String!): UserPresenceDto
@@ -379,8 +393,9 @@ type UserDto {
   chatroomsCreated: [ChatroomDto!]
   comments: [CommentDto!]
   createdAt: DateTime!
-  email: String!
+  email: String
   firstname: String!
+  followStatus: String
   followers: [FollowerDto!]
   following: [FollowerDto!]
   id: String!
@@ -403,6 +418,7 @@ type UserPresenceDto {
 }
 
 type UserProfileDto {
+  followStatus: String
   followers: Float
   following: Float
   posts: [Post!]

@@ -1,6 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { DeletePostCommand } from '../commands/deletePost.command';
 import {
+  ForbiddenException,
   HttpException,
   InternalServerErrorException,
   NotFoundException,
@@ -15,18 +16,24 @@ export class DeletePostHandler implements ICommandHandler<DeletePostCommand> {
     private readonly prismaService: PrismaService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
-  async execute(command: DeletePostCommand): Promise<any> {
+
+  async execute(command: DeletePostCommand): Promise<string> {
     try {
       const { postId, userId } = command;
 
       const post = await this.prismaService.post.findUnique({
         where: {
-          createdById: userId,
           id: postId,
         },
       });
 
-      if (!post) throw new NotFoundException('Post Not Found');
+      if (!post || post.deletedAt !== null) {
+        throw new NotFoundException('Post not found');
+      }
+
+      if (post.createdById !== userId) {
+        throw new ForbiddenException('You can only delete your own posts');
+      }
 
       await this.prismaService.post.update({
         where: {
@@ -43,7 +50,7 @@ export class DeletePostHandler implements ICommandHandler<DeletePostCommand> {
         new PostDeletedEvent(postId, userId),
       );
 
-      return 'Post deleted Successfully';
+      return 'Post deleted successfully';
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException('Failed to delete post');

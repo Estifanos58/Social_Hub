@@ -33,4 +33,7 @@ export class PostDto {
 
   @Field(() => [ReactionDto], { nullable: true })
   reactions?: ReactionDto[];
+
+  @Field(() => Boolean, { nullable: true })
+  isSaved?: boolean;
 }

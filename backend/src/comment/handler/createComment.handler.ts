@@ -3,6 +3,7 @@ import { CreateCommentCommand } from '../command/createComment.command';
 import { PrismaService } from 'src/prisma.service';
 import {
   BadRequestException,
+  ForbiddenException,
   HttpException,
   InternalServerErrorException,
   NotFoundException,
@@ -25,9 +26,26 @@ export class CreateCommentHandler
     try {
       const post = await this.prismaService.post.findUnique({
         where: { id: postId },
+        include: { createdBy: true },
       });
 
-      if (!post) throw new NotFoundException('Post not found');
+      if (!post || post.deletedAt !== null)
+        throw new NotFoundException('Post not found');
+
+      // Authorization check for private account posts
+      if (post.createdBy?.isPrivate && post.createdById !== authorId) {
+        const followRecord = await this.prismaService.follower.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: authorId,
+              followingId: post.createdById,
+            },
+          },
+        });
+        if (!followRecord || followRecord.status !== 'ACCEPTED') {
+          throw new ForbiddenException('This post is from a private account');
+        }
+      }
 
       if (parentId) {
         const parentComment = await this.prismaService.comment.findUnique({

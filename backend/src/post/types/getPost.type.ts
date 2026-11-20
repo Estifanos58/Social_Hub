@@ -21,4 +21,7 @@ export class GetPostType extends PickType(PostDto, [
 
   @Field(() => String, { nullable: true })
   userReaction?: string | null; // Assuming reactions are stored as an array of strings
+
+  @Field(() => Boolean, { nullable: true })
+  isSaved?: boolean;
 }

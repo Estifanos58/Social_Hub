@@ -39,7 +39,7 @@ export class GetPostHandler implements IQueryHandler<GetPostQuery> {
         throw new NotFoundException('Post not found');
       }
 
-      // Authorization for private accounts
+      // Authorization for private accounts: only author or approved followers
       if (post.createdBy?.isPrivate && post.createdById !== userId) {
         let isFollowing = false;
         if (userId) {
@@ -51,7 +51,9 @@ export class GetPostHandler implements IQueryHandler<GetPostQuery> {
               },
             },
           });
-          isFollowing = Boolean(followRecord);
+          isFollowing = Boolean(
+            followRecord && followRecord.status === 'ACCEPTED',
+          );
         }
 
         if (!isFollowing) {
@@ -63,19 +65,44 @@ export class GetPostHandler implements IQueryHandler<GetPostQuery> {
         ? post.reactions.find((r) => r.createdById === userId)
         : null;
 
+      let isSaved = false;
+      if (userId) {
+        const saved = await this.prismaService.savedPost.findUnique({
+          where: {
+            userId_postId: {
+              userId,
+              postId: post.id,
+            },
+          },
+        });
+        isSaved = Boolean(saved);
+      }
+
+      // Sanitize createdBy email to avoid private data leaks
+      const sanitizedCreatedBy = post.createdBy
+        ? {
+            ...post.createdBy,
+            email: post.createdById === userId ? post.createdBy.email : '',
+          }
+        : post.createdBy;
+
       const mappedPost: GetPostType = {
         id: post.id,
         content: post.content,
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
         createdById: post.createdById,
-        createdBy: post.createdBy,
+        createdBy: sanitizedCreatedBy as any,
         images: post.images,
-        comments: post.comments,
+        comments: post.comments.map((c) => ({
+          ...c,
+          createdBy: c.createdBy ? { ...c.createdBy, email: '' } : c.createdBy,
+        })) as any,
         reactions: post.reactions,
         commentsCount: post._count.comments,
         reactionsCount: post._count.reactions,
         userReaction: userReaction ? (userReaction.type as string) : null,
+        isSaved,
       };
 
       return mappedPost;

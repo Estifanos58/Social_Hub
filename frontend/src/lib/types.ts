@@ -13,12 +13,13 @@ export interface Post {
     commentsCount: number;
     reactionsCount: number;
     userReaction?: string | null; 
+    isSaved?: boolean;
     images: {
         id: string;
         url: string;
         postId: string;
     }[];
-     comments: {
+     comments?: {
         id: string;
         content: string;
         createdAt: string;

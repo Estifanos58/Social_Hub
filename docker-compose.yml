@@ -59,8 +59,9 @@ services:
       REDIS_TLS: ${REDIS_TLS:-false}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
       CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
-      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-change_in_production_access_secret_32_chars_minimum}
-      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-change_in_production_refresh_secret_32_chars_minimum}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-local_dev_access_token_secret_32_chars_min}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-local_dev_refresh_token_secret_32_chars_min}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-http://localhost:5000/auth/google/callback}

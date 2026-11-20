@@ -26,8 +26,8 @@ export class UserDto {
   @Field(() => String, { nullable: true })
   avatarUrl?: string | null;
 
-  @Field()
-  email: string;
+  @Field(() => String, { nullable: true })
+  email?: string | null;
 
   @Field(() => GraphQLISODateTime, { nullable: true })
   lastSeenAt?: Date | null;
@@ -40,6 +40,9 @@ export class UserDto {
 
   @Field(() => Boolean, { nullable: true })
   isFollowing?: boolean;
+
+  @Field(() => String, { nullable: true })
+  followStatus?: string | null;
 
   @Field(() => GraphQLISODateTime)
   createdAt: Date;

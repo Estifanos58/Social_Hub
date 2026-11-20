@@ -12,6 +12,9 @@ export class UserProfileDto {
   @Field({ nullable: true })
   following?: number;
 
+  @Field(() => String, { nullable: true })
+  followStatus?: string;
+
   @Field(() => [Post], { nullable: true })
   posts?: Post[];
 

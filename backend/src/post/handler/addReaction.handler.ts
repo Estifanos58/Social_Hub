@@ -3,6 +3,7 @@ import { AddReactionCommand } from '../commands/addReaction.command';
 import { PrismaService } from 'src/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PostReactionEvent } from '../event/postReaction.event';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 @CommandHandler(AddReactionCommand)
 export class AddReactionHandler implements ICommandHandler<AddReactionCommand> {
@@ -14,6 +15,30 @@ export class AddReactionHandler implements ICommandHandler<AddReactionCommand> {
     const { userId, postId, ractionType } = command;
 
     try {
+      const post = await this.prismaService.post.findUnique({
+        where: { id: postId },
+        include: { createdBy: true },
+      });
+
+      if (!post || post.deletedAt !== null) {
+        throw new NotFoundException('Post not found');
+      }
+
+      // Authorization check for private account posts
+      if (post.createdBy?.isPrivate && post.createdById !== userId) {
+        const followRecord = await this.prismaService.follower.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: userId,
+              followingId: post.createdById,
+            },
+          },
+        });
+        if (!followRecord || followRecord.status !== 'ACCEPTED') {
+          throw new ForbiddenException('This post is from a private account');
+        }
+      }
+
       const reaction = await this.prismaService.reaction.findUnique({
         where: {
           postId_createdById: {

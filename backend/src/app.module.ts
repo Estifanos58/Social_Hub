@@ -22,6 +22,7 @@ import { redisPubSub } from './pubsub';
 import { ChatroomModule } from './chatroom/chatroom.module';
 import { UserDisconnectedEvent } from './user/event';
 import { PrismaModule } from './prisma/prisma.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { PrismaModule } from './prisma/prisma.module';
       isGlobal: true,
     }),
     PrismaModule,
+    RedisModule,
     AuthModule,
     TokenModule,
     MailModule,
@@ -65,19 +67,18 @@ import { PrismaModule } from './prisma/prisma.module';
                 // 1. Check connectionParams (Authorization Bearer / token)
                 const paramToken = tokenService.extractToken(connectionParams);
                 let user = paramToken
-                  ? tokenService.validateToken(paramToken)
+                  ? tokenService.validateAccessToken(paramToken)
                   : null;
 
                 // 2. If not found or invalid in params, check cookies from upgrade request
+                // NOTE: Never accept refresh tokens for WebSocket connections
                 if (!user && req?.headers?.cookie) {
                   const parsedCookies = cookie.parse(req.headers.cookie);
                   const cookieToken =
                     parsedCookies['accessToken'] ??
-                    parsedCookies['access_token'] ??
-                    parsedCookies['refreshToken'] ??
-                    parsedCookies['refresh_token'];
+                    parsedCookies['access_token'];
                   if (cookieToken) {
-                    user = tokenService.validateToken(cookieToken);
+                    user = tokenService.validateAccessToken(cookieToken);
                   }
                 }
 

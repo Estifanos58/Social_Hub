@@ -29,17 +29,6 @@ export class GetNotificationsHandler
       },
     });
 
-    // Mark all unread notifications in this batch as read (fire and forget)
-    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
-    if (unreadIds.length > 0) {
-      this.prisma.notification
-        .updateMany({
-          where: { id: { in: unreadIds }, recipientId: userId, isRead: false },
-          data: { isRead: true, readAt: new Date() },
-        })
-        .catch(() => {}); // ignore errors
-    }
-
     return notifications;
   }
 }

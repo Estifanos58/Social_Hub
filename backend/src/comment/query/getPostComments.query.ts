@@ -5,5 +5,6 @@ export class GetPostCommentsQuery {
     public readonly after?: string, // cursor = comment id of last seen top-level
     public readonly directRepliesLimit: number = 5, // per parent
     public readonly secondLevelLimit: number = 5, // per first-level reply
+    public readonly userId?: string,
   ) {}
 }

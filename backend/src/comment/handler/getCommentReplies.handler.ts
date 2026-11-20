@@ -5,7 +5,7 @@ import {
   CommentRepliesConnectionDto,
   CommentEdgeDto,
 } from '../types/pagination.types';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 @QueryHandler(GetCommentRepliesQuery)
 export class GetCommentRepliesHandler
@@ -19,9 +19,37 @@ export class GetCommentRepliesHandler
     // Ensure parent exists
     const parent = await this.prisma.comment.findUnique({
       where: { id: q.commentId },
+      include: {
+        post: {
+          include: { createdBy: true },
+        },
+      },
     });
-    if (!parent || parent.deletedAt)
+    if (!parent || parent.deletedAt || !parent.post || parent.post.deletedAt)
       throw new NotFoundException('Comment not found');
+
+    if (
+      parent.post.createdBy?.isPrivate &&
+      parent.post.createdById !== q.userId
+    ) {
+      let isFollowing = false;
+      if (q.userId) {
+        const followRecord = await this.prisma.follower.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: q.userId,
+              followingId: parent.post.createdById,
+            },
+          },
+        });
+        isFollowing = Boolean(
+          followRecord && followRecord.status === 'ACCEPTED',
+        );
+      }
+      if (!isFollowing) {
+        throw new ForbiddenException('This post is from a private account');
+      }
+    }
 
     const take = Math.min(q.first ?? 5, 50);
     const direct = await this.prisma.comment.findMany({

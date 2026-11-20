@@ -9,14 +9,15 @@ import { GetUsersToFollowQuery } from "@/gql/graphql";
 import { RightSideFooterLinks } from "@/lib/links";
 import SidebarContact, { RightSideLoading } from "./SidebarContact";
 import { useUserStore } from "@/store/userStore";
-import { UserPlus, ChevronRight } from "lucide-react";
+import { UserPlus, ChevronRight, RefreshCw } from "lucide-react";
 
 function RightSideBar() {
-  const { data, loading, error } = useQuery<GetUsersToFollowQuery>(
+  const { data, loading, error, refetch } = useQuery<GetUsersToFollowQuery>(
     GET_USERS_TO_FOLLOW,
     {
       variables: { limit: 10, offset: 0 },
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
+      notifyOnNetworkStatusChange: true,
     }
   );
 
@@ -69,8 +70,14 @@ function RightSideBar() {
               <UserPlus className="h-4 w-4 text-primary" />
               Suggested for you
             </h2>
-            <button className="text-xs text-primary hover:underline font-medium cursor-pointer">
-              Refresh
+            <button
+              onClick={() => refetch()}
+              disabled={loading}
+              className="text-xs text-primary hover:underline font-medium cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              aria-label="Refresh suggested users"
+            >
+              <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh</span>
             </button>
           </div>
 

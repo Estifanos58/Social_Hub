@@ -10,6 +10,10 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { Request, Response } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { issueToken, hashRefreshToken } from 'src/utils/issueToken';
+import {
+  getAccessTokenSecret,
+  getRefreshTokenSecret,
+} from 'src/utils/security';
 
 @Injectable()
 export class GraphQLAuthGuard implements CanActivate {
@@ -43,9 +47,7 @@ export class GraphQLAuthGuard implements CanActivate {
     ): Promise<boolean> => {
       try {
         const payload = await this.jwtService.verifyAsync(refreshToken, {
-          secret:
-            this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-            'default_refresh_secret_for_dev',
+          secret: getRefreshTokenSecret(this.configService),
         });
 
         const userId = payload?.sub;
@@ -123,9 +125,7 @@ export class GraphQLAuthGuard implements CanActivate {
     if (headerAccessToken) {
       try {
         const payload = await this.jwtService.verifyAsync(headerAccessToken, {
-          secret:
-            this.configService.get<string>('ACCESS_TOKEN_SECRET') ||
-            'default_access_secret_for_dev',
+          secret: getAccessTokenSecret(this.configService),
         });
 
         request['user'] = payload;
@@ -143,9 +143,7 @@ export class GraphQLAuthGuard implements CanActivate {
     if (cookieAccessToken) {
       try {
         const payload = await this.jwtService.verifyAsync(cookieAccessToken, {
-          secret:
-            this.configService.get<string>('ACCESS_TOKEN_SECRET') ||
-            'default_access_secret_for_dev',
+          secret: getAccessTokenSecret(this.configService),
         });
 
         request['user'] = payload;

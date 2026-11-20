@@ -4,20 +4,27 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Post } from "@/lib/types";
-import React from "react";
+import React, { useState } from "react";
 import { CommentSection } from "../custom/comment/CommentSection";
 import { formatRelative } from "@/lib/utils";
 import { useGeneralStore } from "@/store/generalStore";
 import { ReactionBar } from "./ReactionBar";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PostActionMenu } from "../custom/post/PostActionMenu";
 
 interface ArrowProps {
   className?: string;
   style?: React.CSSProperties;
   onClick?: () => void;
+}
+
+interface PostDisplayProps {
+  post: Post;
+  onDelete?: (postId: string) => void;
+  onHide?: (postId: string) => void;
 }
 
 const SliderNextArrow: React.FC<ArrowProps> = ({ onClick }) => (
@@ -42,8 +49,13 @@ const SliderPrevArrow: React.FC<ArrowProps> = ({ onClick }) => (
   </button>
 );
 
-export const PostDisplay = ({ post }: { post: Post }) => {
+export const PostDisplay: React.FC<PostDisplayProps> = ({
+  post,
+  onDelete,
+  onHide,
+}) => {
   const { setSelectedPost } = useGeneralStore();
+  const [content, setContent] = useState(post.content);
 
   const sliderSettings = {
     dots: true,
@@ -95,19 +107,18 @@ export const PostDisplay = ({ post }: { post: Post }) => {
               ? `edited ${formatRelative(post.updatedAt)}`
               : formatRelative(post.createdAt)}
           </span>
-          <button
-            type="button"
-            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-            aria-label="Post actions"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
+          <PostActionMenu
+            post={{ ...post, content }}
+            onDelete={onDelete}
+            onHide={onHide}
+            onEditSuccess={(newContent) => setContent(newContent)}
+          />
         </div>
       </div>
 
       {/* Content */}
       <p className="mb-4 text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap break-words">
-        {post.content}
+        {content}
       </p>
 
       {/* Media Rendering */}

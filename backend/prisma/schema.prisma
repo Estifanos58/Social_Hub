@@ -36,6 +36,14 @@ enum NotificationType {
   REACTION_ON_POST    // Someone reacted to user's post
   NEW_FOLLOWER        // Someone followed the user
   POST_DELETED        // User deleted their post
+  FOLLOW_REQUEST      // Private account follow request
+  FOLLOW_ACCEPTED     // Follow request accepted
+}
+
+enum FollowRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 // ============================================
@@ -68,6 +76,10 @@ model User {
   followers    Follower[]      @relation("UserFollowers")
   following    Follower[]      @relation("UserFollowing")
 
+  savedPosts         SavedPost[]         @relation("UserSavedPosts")
+  postReports        PostReport[]        @relation("UserReportedPosts")
+  notInterestedPosts NotInterestedPost[] @relation("UserNotInterestedPosts")
+
   // Notifications
   notificationsReceived Notification[] @relation("UserNotificationsReceived")
   notificationsActed    Notification[] @relation("UserNotificationsActed")
@@ -76,18 +88,22 @@ model User {
 }
 
 model Follower {
-  id           String   @id @default(uuid())
+  id           String              @id @default(uuid())
   followerId   String
   followingId  String
+  status       FollowRequestStatus @default(ACCEPTED)
 
-  createdAt    DateTime @default(now())
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @default(now()) @updatedAt
 
   // Relations
-  follower     User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
-  following    User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  follower     User                @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following    User                @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId]) // prevent duplicates
   @@index([followingId, followerId])  // query optimizations
+  @@index([followingId, status])
+  @@index([followerId, status])
 }
 
 model Credential {
@@ -132,10 +148,56 @@ model Post {
   comments    Comment[]    @relation("PostComments")
   reactions   Reaction[]   @relation("PostReactions")
 
+  savedBy            SavedPost[]         @relation("PostSavedBy")
+  reports            PostReport[]        @relation("PostReports")
+  notInterestedBy    NotInterestedPost[] @relation("PostNotInterestedBy")
+
   // Notifications referencing this post
   notifications Notification[]
 
   @@index([createdById, deletedAt])
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation("UserSavedPosts", fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation("PostSavedBy", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+model PostReport {
+  id         String   @id @default(uuid())
+  reporterId String
+  postId     String
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  reporter   User     @relation("UserReportedPosts", fields: [reporterId], references: [id], onDelete: Cascade)
+  post       Post     @relation("PostReports", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([postId])
+}
+
+model NotInterestedPost {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation("UserNotInterestedPosts", fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation("PostNotInterestedBy", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
 }
 
 model PostImage {

@@ -4,10 +4,23 @@ import * as cookieParser from 'cookie-parser';
 import { BadRequestException, ValidationPipe, Logger } from '@nestjs/common';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { Request, Response, NextFunction } from 'express';
+import { ConfigService } from '@nestjs/config';
+import { validateProductionEnvironment } from './utils/security';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  const configService = app.get(ConfigService);
+  validateProductionEnvironment(configService);
+
+  // Configure Express to trust reverse proxy headers for rate limiting and IP resolution
+  const expressApp = app.getHttpAdapter().getInstance();
+  const trustProxyConfig = process.env.TRUST_PROXY ?? '1';
+  expressApp.set(
+    'trust proxy',
+    trustProxyConfig === 'true' ? true : Number(trustProxyConfig) || 1,
+  );
 
   const clientUrl = process.env.CLIENT_URL;
   const allowedOrigins = [

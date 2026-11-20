@@ -13,6 +13,10 @@ import { GraphQLAuthGuard } from 'src/common/guards/graphql-auth.guard';
 import { FollowUserCommand } from './commands/FollowUserCommand';
 import { Request } from 'express';
 import { UnFollowUserCommand } from './commands/UnFollowUserCommand';
+import { AcceptFollowRequestCommand } from './commands/AcceptFollowRequestCommand';
+import { RejectFollowRequestCommand } from './commands/RejectFollowRequestCommand';
+import { CancelFollowRequestCommand } from './commands/CancelFollowRequestCommand';
+import { GetPendingFollowRequestsQuery } from './query/GetPendingFollowRequests.query';
 import { GetUserQuery } from './query/GetUser.query';
 import { UserProfileDto } from './types/getUser.type';
 import {
@@ -72,9 +76,52 @@ export class UserResolver {
   async UnfollowUser(
     @Args('followingId') followingId: string,
     @Context() context: { req: Request },
-  ): Promise<UserResponse> {
+  ): Promise<string> {
     return this.commandBus.execute(
       new UnFollowUserCommand(context.req.user?.sub!, followingId),
+    );
+  }
+
+  @UseGuards(GraphQLAuthGuard)
+  @Mutation(() => String)
+  async acceptFollowRequest(
+    @Args('followerId') followerId: string,
+    @Context() context: { req: Request },
+  ): Promise<string> {
+    return this.commandBus.execute(
+      new AcceptFollowRequestCommand(context.req.user?.sub!, followerId),
+    );
+  }
+
+  @UseGuards(GraphQLAuthGuard)
+  @Mutation(() => String)
+  async rejectFollowRequest(
+    @Args('followerId') followerId: string,
+    @Context() context: { req: Request },
+  ): Promise<string> {
+    return this.commandBus.execute(
+      new RejectFollowRequestCommand(context.req.user?.sub!, followerId),
+    );
+  }
+
+  @UseGuards(GraphQLAuthGuard)
+  @Mutation(() => String)
+  async cancelFollowRequest(
+    @Args('followingId') followingId: string,
+    @Context() context: { req: Request },
+  ): Promise<string> {
+    return this.commandBus.execute(
+      new CancelFollowRequestCommand(context.req.user?.sub!, followingId),
+    );
+  }
+
+  @UseGuards(GraphQLAuthGuard)
+  @Query(() => [UserDto])
+  async getPendingFollowRequests(
+    @Context() context: { req: Request },
+  ): Promise<UserDto[]> {
+    return this.queryBus.execute(
+      new GetPendingFollowRequestsQuery(context.req.user?.sub!),
     );
   }
 

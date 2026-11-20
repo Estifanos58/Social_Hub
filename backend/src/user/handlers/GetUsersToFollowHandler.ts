@@ -14,13 +14,14 @@ export class GetUsersToFollowHandler
     const { userId, limit, offset } = query;
 
     try {
-      // Fetch one extra user to check if there are more
+      // Exclude current user and accounts already followed or with pending requests
       const users = await this.prismaService.user.findMany({
         where: {
           id: { not: userId },
           followers: {
             none: {
               followerId: userId,
+              status: { in: ['ACCEPTED', 'PENDING'] },
             },
           },
         },
@@ -35,7 +36,7 @@ export class GetUsersToFollowHandler
           lastname: true,
           bio: true,
           avatarUrl: true,
-          email: true,
+          email: false,
           lastSeenAt: true,
           verified: true,
           isPrivate: true,
@@ -44,6 +45,7 @@ export class GetUsersToFollowHandler
           following: {
             where: {
               followingId: userId,
+              status: 'ACCEPTED',
             },
             select: {
               id: true,
@@ -65,12 +67,13 @@ export class GetUsersToFollowHandler
       const sanitizedUsers = (hasMore ? users.slice(0, limit) : users).map(
         ({ following, ...user }) => ({
           ...user,
+          email: '', // Never leak email addresses to non-owners
           isFollowing: Array.isArray(following) && following.length > 0,
         }),
       );
 
       return {
-        users: sanitizedUsers,
+        users: sanitizedUsers as any,
         hasMore,
       };
     } catch (error) {
@@ -82,21 +85,3 @@ export class GetUsersToFollowHandler
     }
   }
 }
-
-/*
-
-{
-    users: [
-        {
-            id: 1,
-            firsname,
-            lastname,
-            avatarUrl,
-            email,
-            isFollowing: boolean(wether the user follows the current user or not),
-        }
-    ],
-    hasMore: boolean
-}
-
-*/

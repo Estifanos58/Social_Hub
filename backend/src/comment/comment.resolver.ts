@@ -47,7 +47,9 @@ export class CommentResolver {
     directRepliesLimit?: number,
     @Args('secondLevelLimit', { type: () => Int, nullable: true })
     secondLevelLimit?: number,
+    @Context() context?: { req?: Request },
   ) {
+    const userId = context?.req?.user?.sub;
     return this.queryBus.execute(
       new GetPostCommentsQuery(
         postId,
@@ -55,6 +57,7 @@ export class CommentResolver {
         after,
         directRepliesLimit ?? 5,
         secondLevelLimit ?? 5,
+        userId,
       ),
     );
   }
@@ -69,7 +72,9 @@ export class CommentResolver {
     includeChildren?: boolean,
     @Args('secondLevelLimit', { type: () => Int, nullable: true })
     secondLevelLimit?: number,
+    @Context() context?: { req?: Request },
   ) {
+    const userId = context?.req?.user?.sub;
     return this.queryBus.execute(
       new GetCommentRepliesQuery(
         commentId,
@@ -77,6 +82,7 @@ export class CommentResolver {
         after,
         includeChildren ?? true,
         secondLevelLimit ?? 5,
+        userId,
       ),
     );
   }

@@ -115,6 +115,32 @@ export class NotificationService {
     });
   }
 
+  followRequest(
+    recipientId: string,
+    actorId: string,
+    metadata?: Prisma.JsonValue,
+  ) {
+    return this.create({
+      type: NotificationType.FOLLOW_REQUEST,
+      recipientId,
+      actorId,
+      metadata,
+    });
+  }
+
+  followAccepted(
+    recipientId: string,
+    actorId: string,
+    metadata?: Prisma.JsonValue,
+  ) {
+    return this.create({
+      type: NotificationType.FOLLOW_ACCEPTED,
+      recipientId,
+      actorId,
+      metadata,
+    });
+  }
+
   postDeleted(
     recipientId: string,
     postId: string,

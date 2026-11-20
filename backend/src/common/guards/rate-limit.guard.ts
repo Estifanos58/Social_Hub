@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
@@ -12,30 +13,16 @@ import {
   RATE_LIMIT_KEY,
   RateLimitOptions,
 } from '../decorators/rate-limit.decorator';
-
-interface MemoryBucket {
-  count: number;
-  resetAt: number;
-}
-
-const memoryStore = new Map<string, MemoryBucket>();
-
-// Periodic cleanup of stale memory bucket entries every 5 minutes
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [key, bucket] of memoryStore.entries()) {
-      if (bucket.resetAt <= now) {
-        memoryStore.delete(key);
-      }
-    }
-  },
-  5 * 60 * 1000,
-).unref();
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class RateLimitGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  private readonly logger = new Logger(RateLimitGuard.name);
+
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly redisService: RedisService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const options = this.reflector.get<RateLimitOptions>(
@@ -47,10 +34,24 @@ export class RateLimitGuard implements CanActivate {
       return true;
     }
 
-    const gqlCtx = GqlExecutionContext.create(context).getContext();
-    const req: Request = gqlCtx?.req ?? context.switchToHttp().getRequest();
+    const isGql =
+      typeof context.getType === 'function' &&
+      context.getType<string>() === 'graphql';
+    const gqlCtx = isGql
+      ? GqlExecutionContext.create(context).getContext()
+      : null;
+    const req: Request =
+      gqlCtx?.req ??
+      (typeof context.switchToHttp === 'function'
+        ? context.switchToHttp().getRequest()
+        : null);
 
+    // Correctly resolve client IP respecting trusted reverse proxies
     const clientIp =
+      req?.ip ||
+      (Array.isArray((req as any)?.ips) && (req as any).ips.length > 0
+        ? (req as any).ips[0]
+        : null) ||
       req?.headers?.['x-forwarded-for']?.toString().split(',')[0].trim() ||
       req?.socket?.remoteAddress ||
       'anonymous';
@@ -59,28 +60,47 @@ export class RateLimitGuard implements CanActivate {
     const handlerName = context.getHandler().name;
     const key = `ratelimit:${handlerName}:${userId}:${clientIp}`;
 
-    const now = Date.now();
-    const windowMs = options.duration * 1000;
-    const bucket = memoryStore.get(key);
+    try {
+      const client = this.redisService.getClient();
+      const pipeline = client.pipeline();
+      pipeline.incr(key);
+      pipeline.ttl(key);
+      const results = await pipeline.exec();
 
-    if (!bucket || bucket.resetAt <= now) {
-      memoryStore.set(key, {
-        count: 1,
-        resetAt: now + windowMs,
-      });
+      if (results && results[0] && results[1]) {
+        const [incrErr, countResult] = results[0];
+        const [ttlErr, ttlResult] = results[1];
+
+        if (incrErr) throw incrErr;
+
+        const count = countResult as number;
+        let ttl = ttlResult as number;
+
+        // If key is newly created or missing expiry, set TTL
+        if (count === 1 || ttl === -1) {
+          await client.expire(key, options.duration);
+          ttl = options.duration;
+        }
+
+        if (count > options.points) {
+          const waitSeconds = ttl > 0 ? ttl : options.duration;
+          throw new HttpException(
+            options.errorMessage ||
+              `Too many requests. Please wait ${waitSeconds} seconds before retrying.`,
+            HttpStatus.TOO_MANY_REQUESTS,
+          );
+        }
+      }
+
+      return true;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.warn(
+        `Redis rate limiting unavailable (${error?.message}). Allowing request.`,
+      );
       return true;
     }
-
-    if (bucket.count >= options.points) {
-      const waitSeconds = Math.ceil((bucket.resetAt - now) / 1000);
-      throw new HttpException(
-        options.errorMessage ||
-          `Too many requests. Please wait ${waitSeconds} seconds before retrying.`,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    bucket.count += 1;
-    return true;
   }
 }

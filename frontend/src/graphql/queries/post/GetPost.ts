@@ -40,6 +40,7 @@ export const GET_POST = gql`
       commentsCount
       reactionsCount
       userReaction
+      isSaved
     }
   }
 `;

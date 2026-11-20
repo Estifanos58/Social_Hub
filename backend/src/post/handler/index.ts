@@ -4,3 +4,5 @@ export * from './getPosts.handler';
 export * from './getPost.handler';
 export * from './addReaction.handler';
 export * from './removeReaction.handler';
+export * from './editPost.handler';
+export * from './postActions.handler';

@@ -8,3 +8,7 @@ export * from './GetFollowingHandler';
 export * from './SearchUsersHandler';
 export * from './GetChatUsersHandler';
 export * from './GetUserChatroomsHandler';
+export * from './AcceptFollowRequestHandler';
+export * from './RejectFollowRequestHandler';
+export * from './CancelFollowRequestHandler';
+export * from './GetPendingFollowRequestsHandler';

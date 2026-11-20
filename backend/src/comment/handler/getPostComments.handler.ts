@@ -1,6 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetPostCommentsQuery } from '../query/getPostComments.query';
 import { PrismaService } from 'src/prisma.service';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import {
   PostCommentsConnectionDto,
   CommentEdgeDto,
@@ -15,6 +16,35 @@ export class GetPostCommentsHandler
   async execute(
     query: GetPostCommentsQuery,
   ): Promise<PostCommentsConnectionDto> {
+    const post = await this.prisma.post.findUnique({
+      where: { id: query.postId },
+      include: { createdBy: true },
+    });
+
+    if (!post || post.deletedAt !== null) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (post.createdBy?.isPrivate && post.createdById !== query.userId) {
+      let isFollowing = false;
+      if (query.userId) {
+        const followRecord = await this.prisma.follower.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: query.userId,
+              followingId: post.createdById,
+            },
+          },
+        });
+        isFollowing = Boolean(
+          followRecord && followRecord.status === 'ACCEPTED',
+        );
+      }
+      if (!isFollowing) {
+        throw new ForbiddenException('This post is from a private account');
+      }
+    }
+
     const take = Math.min(query.first ?? 5, 50); // safety cap
 
     // 1. Fetch top-level parents (cursor pagination by id for now)

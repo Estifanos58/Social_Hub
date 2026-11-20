@@ -33,29 +33,43 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery> {
 
       if (!user) throw new NotFoundException('User not found');
 
-      // privacy logic
-      let canView = true;
-      if (user.id !== requesterId && user.isPrivate) {
-        let isFollowing = false;
-        if (requesterId) {
-          const followRecord = await this.prisma.follower.findUnique({
-            where: {
-              followerId_followingId: {
-                followerId: requesterId,
-                followingId: userId,
-              },
+      const isOwner = Boolean(requesterId && requesterId === user.id);
+
+      // Check follow relationship between requester and target profile
+      let followStatus = 'NONE';
+      let isFollowing = false;
+
+      if (requesterId && !isOwner) {
+        const followRecord = await this.prisma.follower.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: requesterId,
+              followingId: userId,
             },
-          });
-          isFollowing = Boolean(followRecord);
+          },
+        });
+
+        if (followRecord) {
+          followStatus = followRecord.status;
+          isFollowing = followRecord.status === 'ACCEPTED';
         }
-        if (!isFollowing) canView = false;
       }
 
-      if (!canView) {
-        return this.buildUserProfile(user, false, requesterId === user.id);
+      // Privacy logic: private accounts are only viewable by owner and accepted followers
+      let canView = true;
+      if (!isOwner && user.isPrivate) {
+        if (!isFollowing) {
+          canView = false;
+        }
       }
 
-      return this.buildUserProfile(user, true, true);
+      return this.buildUserProfile(
+        user,
+        canView,
+        isOwner,
+        followStatus,
+        isFollowing,
+      );
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException('Something went wrong');
@@ -64,15 +78,17 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery> {
 
   private async buildUserProfile(
     user: any,
-    includeSensitive: boolean,
-    isOwner: boolean = false,
-  ): Promise<any> {
+    canView: boolean,
+    isOwner: boolean,
+    followStatus: string,
+    isFollowing: boolean,
+  ): Promise<UserProfileDto> {
     const followersCount = await this.prisma.follower.count({
-      where: { followingId: user.id },
+      where: { followingId: user.id, status: 'ACCEPTED' },
     });
 
     const followingCount = await this.prisma.follower.count({
-      where: { followerId: user.id },
+      where: { followerId: user.id, status: 'ACCEPTED' },
     });
 
     return new UserProfileDto({
@@ -82,17 +98,21 @@ export class GetUserHandler implements IQueryHandler<GetUserQuery> {
         firstname: user.firstname,
         lastname: user.lastname || '',
         bio: user.bio || '',
-        email: isOwner ? user.email : includeSensitive ? user.email : '',
+        // FIX: Only account owners receive their email address
+        email: isOwner ? user.email : '',
         isPrivate: user.isPrivate,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         verified: user.verified,
-        lastSeenAt: includeSensitive ? user.lastSeenAt : null,
+        lastSeenAt: isOwner || canView ? user.lastSeenAt : null,
+        isFollowing: isOwner ? undefined : isFollowing,
+        followStatus: isOwner ? undefined : followStatus,
       },
       followers: followersCount,
       following: followingCount,
-      posts: includeSensitive
-        ? user.posts.map((post) => ({
+      followStatus: isOwner ? undefined : followStatus,
+      posts: canView
+        ? user.posts.map((post: any) => ({
             id: post.id,
             imageUrl: post.images[0]?.url || null,
             likes: post.reactions.length,

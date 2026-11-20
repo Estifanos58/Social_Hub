@@ -14,25 +14,30 @@ export class GetFollowersHandler implements IQueryHandler<GetFollowersQuery> {
     try {
       const [totalFollowers, totalFollowing, users] = await Promise.all([
         this.prismaService.follower.count({
-          where: { followingId: userId },
+          where: { followingId: userId, status: 'ACCEPTED' },
         }),
         this.prismaService.follower.count({
-          where: { followerId: userId },
+          where: { followerId: userId, status: 'ACCEPTED' },
         }),
         this.prismaService.follower.findMany({
-          where: { followingId: userId },
+          where: { followingId: userId, status: 'ACCEPTED' },
           skip,
           take: take + 1,
           include: {
             follower: true,
           },
+          orderBy: { createdAt: 'desc' },
         }),
       ]);
 
       const hasMore = users.length > take;
 
       return new GetFollowersDto({
-        users: users.map((f) => f.follower).slice(0, take),
+        users: users.slice(0, take).map((f) => ({
+          ...f.follower,
+          email: '', // Never leak email
+          isFollowing: true,
+        })) as any,
         totalFollowers,
         totalFollowing,
         hasMore,
